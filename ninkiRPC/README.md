@@ -8,8 +8,6 @@ ninkiRPC - A program implementing the worst possible RPC API
 4. Run the resulting binary
 5. Start sending UDP packets to the server to call functions
 
-## Example nping command
-
 ## RPC API format
 
 The RPC API is designed to be really insecure.
