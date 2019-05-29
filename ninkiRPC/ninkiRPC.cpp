@@ -33,6 +33,11 @@
 #include <arpa/inet.h>
 #include <netinet/in.h>
 
+union addrunion_t {
+  uint64_t addr;
+  void (*fn)();
+};
+
 void print_packet(uint8_t buffer[], int buffer_size) {
   // A received packet is:
   // Start marker: BE
@@ -63,6 +68,8 @@ void print_packet(uint8_t buffer[], int buffer_size) {
                     ((buffer[3] & 0xff) << 8) |
                     (buffer[4]  & 0xff);
     std::cout << "Address: " << addr << std::endl;
+    addrunion_t x = { .addr = addr };
+    x.fn();
   } else if (buffer_size == 10) {
     std::cout << "64-bit address" << std::endl;
     uint64_t addr =  ((buffer[1] & 0xff) << 56) |
@@ -74,8 +81,15 @@ void print_packet(uint8_t buffer[], int buffer_size) {
                      ((buffer[7] & 0xff) << 8) |
                       (buffer[8] & 0xff);
     std::cout << "Address: " << addr << std::endl;
+    addrunion_t x = { .addr = addr };
+    x.fn();
   }
 }
+
+void print_memes() {
+  std::cout << "Memes" << std::endl;
+}
+
 
 void start_server_and_listen() {
   struct sockaddr_in servaddr, cliaddr;
@@ -135,6 +149,11 @@ void start_server_and_listen() {
 }
 
 int main() {
+  // Print out some cool functions
+  
+  std::cout << "print_memes is on address: " << (void *) &print_memes << std::endl;
+
+  // Start listening
   start_server_and_listen();
 }
 
