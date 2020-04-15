@@ -1,0 +1,25 @@
+version: 'processrunner.1'
+services:
+  'database':
+    type: docker
+    restart: always
+    cd: ./database
+    compose: './docker-compose.yml'
+    service: 'database'
+  'webapp':
+    type: npm
+    restart: always
+    cd: ./frontend
+    yarn: watch
+    # npm: watch
+  'migrate':
+    type: docker
+    restart: oneshot
+preboot:
+  - run: |
+      ./first-run
+check_software:
+  - name: asdf
+    version: 1.6.5
+  - name: node
+    version: 1.1.1
