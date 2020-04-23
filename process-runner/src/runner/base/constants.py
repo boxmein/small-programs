@@ -1,0 +1,1 @@
+DEFAULT_CONFIGURATION_FILENAME = './runner.yml'
