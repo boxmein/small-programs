@@ -32,7 +32,8 @@ add_subdirectory(${fclibfmt_SOURCE_DIR} ${fclibfmt_BINARY_DIR})
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
-SET(CMAKE_POSITION_INDEPENDENT_CODE TRUE)
+set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 project(process-runner
         LANGUAGES C CXX
@@ -45,6 +46,7 @@ add_executable(
   src/procrunner.cpp
   src/configparser.cpp
   src/prebootrunner.cpp
+  src/tmuxautomator.cpp
 )
 
 SET(CPACK_PACKAGE_NAME "procrunner")

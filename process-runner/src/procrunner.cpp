@@ -18,6 +18,7 @@ int main() {
     fmt::print("Found preboot step\n");
     if (!prebootStep.run.empty()) {
       fmt::print("Found run step in preboot: {}\n", prebootStep.run);
+      runPrebootStep(prebootStep);
     }
   }
 
