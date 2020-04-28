@@ -1,5 +1,6 @@
 #include <fmt/format.h>
 #include "configparser.h"
+#include "prebootrunner.h"
 
 using namespace ProcessRunner;
 

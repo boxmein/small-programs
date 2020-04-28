@@ -44,6 +44,7 @@ add_executable(
   procrunner
   src/procrunner.cpp
   src/configparser.cpp
+  src/prebootrunner.cpp
 )
 
 SET(CPACK_PACKAGE_NAME "procrunner")
