@@ -5,6 +5,9 @@ plugins {
 
 repositories {
   mavenCentral()
+  maven {
+    url = uri("https://jitpack.io")
+  }
 }
 
 tasks.withType<Wrapper> {
@@ -14,6 +17,7 @@ tasks.withType<Wrapper> {
 
 dependencies {
   implementation(kotlin("stdlib"))
+  implementation("io.github.kotlin-telegram-bot.kotlin-telegram-bot:telegram:5.0.0")
 }
 
 version = "1.0.0"
