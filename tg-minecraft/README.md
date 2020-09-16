@@ -2,10 +2,10 @@
 
 Parts:
 
-- Microservice that listens to telegram messages
+- Microservice that listens to telegram messages: `telegrambot`
 - SNS to send start, stop, rcon command messages
 - SNS to receive start, stop events
-- Systemd service on-device to start, stop the server
+- Systemd service on-device to start, stop the server: `service`
 
 ## Dev setup
 
