@@ -4,6 +4,7 @@ plugins {
   application
   kotlin("jvm") version "1.3.21"
   kotlin("plugin.serialization") version "1.3.70"
+  id("com.palantir.docker") version "0.25.0"
 }
 
 repositories {
@@ -34,4 +35,9 @@ application {
 
 tasks.withType<KotlinCompile> {
   kotlinOptions.jvmTarget = "1.8"
+}
+
+docker {
+  name = "242224638212.dkr.ecr.eu-north-1.amazonaws.com/boxmein-tgminecraft-bot"
+  files(tasks.getByName("distZip").outputs)
 }
