@@ -24,8 +24,13 @@ export TELEGRAM_BOT_TOKEN=...
 
 ## Deployment
 
-Deploy it with:
+Authenticate to AWS ECR:
+
+1. Set up Amazon ECR credential helper https://github.com/awslabs/amazon-ecr-credential-helper
+2. Get your access keys etc
+
+Deploy the Telegram bot with:
 
 ```bash
-./deploy.sh
+./gradlew :telegrambot:dockerPush
 ```
