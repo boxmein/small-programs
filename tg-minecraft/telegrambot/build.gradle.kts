@@ -1,5 +1,7 @@
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
+val dockerRepo: String by project
+
 plugins {
   application
   kotlin("jvm") version "1.3.21"
@@ -38,6 +40,6 @@ tasks.withType<KotlinCompile> {
 }
 
 docker {
-  name = "242224638212.dkr.ecr.eu-north-1.amazonaws.com/boxmein-tgminecraft-bot"
+  name = "${dockerRepo}/boxmein-tgminecraft-bot"
   files(tasks.getByName("distZip").outputs)
 }
