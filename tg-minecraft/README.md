@@ -22,6 +22,13 @@ export TELEGRAM_BOT_TOKEN=...
 ./gradlew :telegrambot:run
 ```
 
+Test the Docker image:
+
+```bash
+./gradlew :telegrambot:docker
+docker run -it --env TELEGRAM_BOT_TOKEN=$(pass Telegram/boxmein_bot) 242224638212.dkr.ecr.eu-north-1.amazonaws.com/boxmein-tgminecraft-bot
+```
+
 ## Deployment
 
 Authenticate to AWS ECR:
