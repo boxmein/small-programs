@@ -7,8 +7,14 @@ import com.github.kotlintelegrambot.dispatcher.command
 fun main() {
   println("Hello, mc")
 
+  val apiToken: String = if (System.getenv("APP_ENV") == "production") {
+    ApiTokenFetcher().apiToken
+  } else {
+    ""
+  }
+
   val bot = bot {
-    token = ""
+    token = apiToken
     dispatch {
       command("start") { bot, update -> 
         bot.sendMessage(
