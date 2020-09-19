@@ -24,7 +24,8 @@ tasks.withType<Wrapper> {
 dependencies {
   implementation(kotlin("stdlib"))
   implementation("io.github.kotlin-telegram-bot.kotlin-telegram-bot:telegram:5.0.0")
-  implementation("software.amazon.awssdk:secretsmanager:2.5.29")
+  implementation("software.amazon.awssdk:secretsmanager:2.14.21")
+  implementation("software.amazon.awssdk:ec2:2.14.21")
   implementation("org.jetbrains.kotlinx:kotlinx-serialization-runtime:0.20.0")
 }
 

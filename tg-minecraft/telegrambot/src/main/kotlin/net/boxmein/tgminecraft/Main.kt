@@ -13,6 +13,8 @@ fun main() {
     ""
   }
 
+  val vpsService = VPSService()
+
   val bot = bot {
     token = apiToken
     dispatch {
@@ -21,12 +23,14 @@ fun main() {
           chatId = update.message!!.chat.id,
           text = "Starting"
         )
+        vpsService.startServer()
       }
       command("stop") { bot, update -> 
         bot.sendMessage(
           chatId = update.message!!.chat.id,
           text = "Stopping"
         )
+        vpsService.stopServer()
       }
     }
   }
