@@ -11,7 +11,7 @@ import com.pusher.client.connection.ConnectionStateChange
 const val CHANNEL: String = "tgminecraft"
 const val EVENT_TYPE: String = "minecraft-command"
 
-val RCON_MATCHER: Regex = "^RCON (.+?)$".toRegex()
+val RCON_MATCHER: Regex = "^\"RCON (.+?)\"$".toRegex()
 
 fun main() {
   println("Hello, service")
@@ -24,11 +24,11 @@ fun main() {
 
   val pusher = connectToPusher()
   pusher.bind(EVENT_TYPE) { event ->
-    val command = event.data
+    val command = event.data // NOTE: sending through the debug console - specify whatever you want. Sending through the Java library - serialized to JSON
     println("\u001b[31;1mCommand received: ${command}\u001b[0m")
-    if (command == "STOP") {
+    if (command == "\"STOP\"") {
       manager.stop()
-    } else if (command == "SAVE") {
+    } else if (command == "\"SAVE\"") {
       manager.saveAll()
     } else if (command matches RCON_MATCHER) {
       val matches = RCON_MATCHER.find(command)

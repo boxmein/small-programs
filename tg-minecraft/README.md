@@ -7,7 +7,12 @@ Parts:
   - After starting AWS instance, it fires an SNS message to start the Minecraft server
 - SNS to send start, stop, rcon command messages
 - SNS to receive start, stop events
-- Systemd service on-device to start, stop the server: `service`
+- Systemd service on-device: `service`
+  - It starts the server when the service launches
+  - It starts listening to messages from Pusher
+  - It stops the server when the `"STOP"` message is received
+  - It also provides rcon
+  - It shuts down the server after the server gracefully stops
 
 ## Dev setup
 
@@ -28,6 +33,10 @@ export AWS_ACCESS_KEY_ID=...
 export AWS_SECRET_ACCESS_KEY=...
 # The instance id of the VPS to start and stop
 export SERVER_AWS_INSTANCE_ID=...
+# Pusher is used as the notification backend bc it's free
+export PUSHER_APP_ID=...
+export PUSHER_APP_KEY=...
+export PUSHER_APP_SECRET=...
 ./gradlew :telegrambot:run
 ```
 
@@ -41,6 +50,9 @@ docker run -it \
   --env AWS_ACCESS_KEY_ID=... \
   --env AWS_SECRET_ACCESS_KEY=... \
   --env SERVER_AWS_INSTANCE_ID=i-03c2fe6178924d185 \
+  --env PUSHER_APP_ID=1078972 \
+  --env PUSHER_APP_KEY=47db97bc033d8ab36649 \
+  --env PUSHER_APP_SECRET=$(pass Pusher/app_secret_1078972) \
   242224638212.dkr.ecr.eu-north-1.amazonaws.com/boxmein-tgminecraft-bot
 ```
 

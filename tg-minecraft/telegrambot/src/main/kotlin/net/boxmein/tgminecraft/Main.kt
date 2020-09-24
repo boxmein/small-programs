@@ -10,6 +10,7 @@ fun main() {
   val apiToken: String = ApiTokenFetcher().apiToken
   val auth: Authorizer = Authorizer()
   val vpsService = VPSService()
+  val serverNotifier = ServerNotifier()
 
   assert(apiToken.length > 0)
   assert(System.getenv("APP_ENV") != null)
@@ -36,7 +37,9 @@ fun main() {
             chatId = update.message!!.chat.id,
             text = "Stopping"
           )
-          vpsService.stopServer()
+          serverNotifier.triggerMessage("STOP")
+          // Server should clean up after itself...
+          // vpsService.stopServer()
         }
       }
     }
