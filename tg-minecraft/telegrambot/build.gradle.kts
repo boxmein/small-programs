@@ -4,7 +4,7 @@ val dockerRepo: String by project
 
 plugins {
   application
-  kotlin("jvm") version "1.3.21"
+  kotlin("jvm")
   kotlin("plugin.serialization") version "1.3.70"
   id("com.palantir.docker") version "0.25.0"
 }
@@ -26,6 +26,7 @@ dependencies {
   implementation("io.github.kotlin-telegram-bot.kotlin-telegram-bot:telegram:5.0.0")
   implementation("software.amazon.awssdk:secretsmanager:2.5.29")
   implementation("org.jetbrains.kotlinx:kotlinx-serialization-runtime:0.20.0")
+  implementation("com.pusher:pusher-http-java:1.0.0")
 }
 
 version = "1.0.0"

@@ -1,7 +1,7 @@
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 plugins {
   application
-  kotlin("jvm") version "1.3.21"
+  kotlin("jvm")
   kotlin("plugin.serialization") version "1.3.70"
 }
 
@@ -17,6 +17,8 @@ tasks.withType<Wrapper> {
 dependencies {
   implementation(kotlin("stdlib"))
   implementation("org.jetbrains.kotlinx:kotlinx-serialization-runtime:0.20.0")
+  implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.3.9")
+  implementation("com.pusher:pusher-java-client:2.2.1")
 }
 
 version = "1.0.0"
