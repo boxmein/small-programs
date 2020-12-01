@@ -1,5 +1,11 @@
 #!/bin/zsh
 set -euo pipefail
 ./gradlew :telegrambot:docker
+
+if [[ -z "$AWS_ACCESS_KEY_ID" ]] || [[ -z "$AWS_SECRET_ACCESS_KEY" ]]; then
+  echo "Please define AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY to deploy manually"
+  exit 1
+fi
+
 docker push 242224638212.dkr.ecr.eu-north-1.amazonaws.com/boxmein-tgminecraft-bot
 
