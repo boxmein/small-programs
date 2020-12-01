@@ -1,0 +1,6 @@
+#!/bin/zsh
+set -euo pipefail
+
+echo "Starting telegram bot..."
+./gradlew :telegrambot:run
+

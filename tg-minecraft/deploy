@@ -1,0 +1,5 @@
+#!/bin/zsh
+set -euo pipefail
+./gradlew :telegrambot:docker
+docker push 242224638212.dkr.ecr.eu-north-1.amazonaws.com/boxmein-tgminecraft-bot
+

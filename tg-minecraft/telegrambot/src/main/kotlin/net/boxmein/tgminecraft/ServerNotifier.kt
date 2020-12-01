@@ -5,9 +5,9 @@ import com.pusher.rest.Pusher
 const val CHANNEL: String = "tgminecraft"
 const val EVENT_TYPE: String = "minecraft-command"
 
-final val PUSHER_APP_ID: String = System.getenv("PUSHER_APP_ID") ?: ""
-final val PUSHER_APP_KEY: String = System.getenv("PUSHER_APP_KEY") ?: ""
-final val PUSHER_APP_SECRET: String = System.getenv("PUSHER_APP_SECRET") ?: ""
+val PUSHER_APP_ID: String = System.getenv("PUSHER_APP_ID") ?: ""
+val PUSHER_APP_KEY: String = System.getenv("PUSHER_APP_KEY") ?: ""
+val PUSHER_APP_SECRET: String = System.getenv("PUSHER_APP_SECRET") ?: ""
 
 class ServerNotifier {
   val pusher = Pusher(

@@ -1,2 +1,3 @@
 build
 .gradle
+server_testing_env
