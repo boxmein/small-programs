@@ -34,7 +34,8 @@ func main() {
 			continue
 		}
 		commandObj := exec.Command("bash", "-c", command)
-		err := commandObj.Run()
+		// NOTE: _ is the command's output
+		_, err := commandObj.CombinedOutput()
 		if err != nil {
 			fmt.Printf("\x1b[31merror\x1b[0m   %s\n", command)
 		} else {

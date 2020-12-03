@@ -10,7 +10,13 @@ and :x: if the tools fail.
 
 ## Usage
 
+1. Build the app: `go build -o checc cmd/checc.go`
+2. Copy the binary to a folder
+3. Create `checc.lst` in the same folder, with one command per line
+4. `watch --color -n120 ./checc`
+
 ```
 go run ./cmd/checc.go
 ```
+
 
