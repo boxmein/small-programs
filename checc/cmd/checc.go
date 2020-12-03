@@ -30,6 +30,9 @@ func main() {
 	}
 
 	for _, command := range commands {
+		if strings.TrimSpace(command) == "" {
+			continue
+		}
 		commandObj := exec.Command("bash", "-c", command)
 		err := commandObj.Run()
 		if err != nil {

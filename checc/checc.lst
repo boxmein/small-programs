@@ -1,0 +1,1 @@
+curl -XGET https://dashboard.local.qminder.com
