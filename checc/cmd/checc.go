@@ -3,12 +3,13 @@ package main
 import (
 	"fmt"
 	"io/ioutil"
+	"os"
 	"os/exec"
 	"strings"
 )
 
-func loadConfig() ([]string, error) {
-	data, err := ioutil.ReadFile("./checc.lst")
+func loadConfig(filename string) ([]string, error) {
+	data, err := ioutil.ReadFile(filename)
 
 	if err != nil {
 		return []string{}, err
@@ -22,11 +23,16 @@ func loadConfig() ([]string, error) {
 func main() {
 	fmt.Println("checcing")
 
-	commands, err := loadConfig()
+	filename := "./.checc.lst"
+	if len(os.Args) == 2 {
+		filename = os.Args[1]
+	}
+
+	commands, err := loadConfig(filename)
 
 	if err != nil {
-		fmt.Errorf("%s", err.Error())
-		panic("file did not load - create a ./checc.lst file")
+		_ = fmt.Errorf("%s", err.Error())
+		panic("file did not load - create a ./.checc.lst file")
 	}
 
 	for _, command := range commands {
