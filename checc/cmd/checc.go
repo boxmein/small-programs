@@ -6,7 +6,7 @@ import (
 	"os"
 )
 
-const DEFAULT_PATH = "./checc.lst"
+const DEFAULT_PATH = "./.checc.lst"
 
 func main() {
 	fmt.Println("checcing")
