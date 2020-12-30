@@ -8,7 +8,7 @@ import (
 
 // @implements model.Check
 type CommandCheck struct {
-	command string
+	Command string
 }
 
 // @implements model.Run
@@ -21,12 +21,12 @@ func (c commandRun) Successful() bool {
 	return c.success
 }
 
-func (c commandRun) Output() string {
+func (c commandRun) Logs() string {
 	return c.output
 }
 
 func (c CommandCheck) Run() model.Run {
-	commandObj := exec.Command("bash", "-c", c.command)
+	commandObj := exec.Command("bash", "-c", c.Command)
 	output, err := commandObj.CombinedOutput()
 
 	return commandRun{
@@ -36,5 +36,5 @@ func (c CommandCheck) Run() model.Run {
 }
 
 func (c CommandCheck) String() string {
-	return fmt.Sprintf("Command: %s", c.command)
+	return fmt.Sprintf("Command: %s", c.Command)
 }

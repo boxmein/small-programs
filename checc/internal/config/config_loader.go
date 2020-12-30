@@ -1,6 +1,7 @@
 package config
 
 import (
+	"github.com/boxmein/small-programs/checc/internal/checks/command_check"
 	"github.com/boxmein/small-programs/checc/internal/model"
 	"io/ioutil"
 	"strings"
@@ -29,8 +30,8 @@ func GetConfig(filePath string) (*model.Config, error) {
 	}
 
 	for _, command := range checclist {
-		config.Checks = append(config.Checks, CommandCheck{
-			command: command,
+		config.Checks = append(config.Checks, command_check.CommandCheck{
+			Command: command,
 		})
 	}
 
