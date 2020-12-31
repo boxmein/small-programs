@@ -121,6 +121,18 @@ mod tests {
         assert_eq!(result, "AA".to_string());
     }
 
+    #[ignore] // this is not implemented yet
+    #[test]
+    fn next_does_not_return_same_string_for_numbers() {
+        let mut permuter = AlphabeticalPermuter::new("A1".to_string());
+        let result = permuter.next().unwrap();
+        assert_eq!(result, "a1".to_string());
+        let result = permuter.next().unwrap();
+        assert_eq!(result, "A1".to_string());
+        let result = permuter.next();
+        assert_eq!(result, None);
+    }
+
     #[test]
     fn test_it_gets_size_right() {
         let permuter = AlphabeticalPermuter::new("A".to_string());
