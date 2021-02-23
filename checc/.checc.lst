@@ -1,3 +1,0 @@
-nslookup huubi.internal.calidity.app
-ping -c 1 huubi.internal.calidity.app
-ssh huubi.internal.calidity.app "echo test"
