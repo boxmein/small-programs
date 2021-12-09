@@ -36,44 +36,40 @@ use std::io::{stdin, BufRead};
 use itertools::Itertools;
 
 fn iterate_over_windows(
-    reader: impl BufRead,
-    mut cb: impl FnMut(String,String) -> ()
-) {
+    reader: impl BufRead
+) -> impl Iterator<Item = (String, String)> {
     let lines = reader.lines()
         .filter(|value| value.is_ok())
         .map(|value| value.unwrap());
-    for (prev, next) in lines.tuple_windows() {
-        cb(prev, next);
-    }
+    return lines.tuple_windows();
 }
 
 /// Usage:
 /// ./1-sonar-sweep < puzzleinput.txt
 fn main() {
+    // Implementation of the solution for the first half
+    // of the puzzle.
     let mut increased_count = 0;
-    iterate_over_windows(
-        stdin().lock(),
-        |prev, next| {
-            if prev == "" || next == "" {
-                return;
-            }
-            let prev = prev.parse::<i32>().expect("Failed to parse as int");
-            let next = next.parse::<i32>().expect("Failed to parse as int");
-    
-            let action = if prev < next { 
-                "increased"
-            } else if prev > next {
-                "decreased"
-            } else {
-                "equal"
-            };
-    
-            if action == "increased" {
-                increased_count += 1;
-            }
-    
-            println!("{} ({})", next, action);
+    for (prev, next) in iterate_over_windows(stdin().lock()) {
+        if prev == "" || next == "" {
+            return;
         }
-    );
+        let prev = prev.parse::<i32>().expect("Failed to parse as int");
+        let next = next.parse::<i32>().expect("Failed to parse as int");
+
+        let action = if prev < next { 
+            "increased"
+        } else if prev > next {
+            "decreased"
+        } else {
+            "equal"
+        };
+
+        if action == "increased" {
+            increased_count += 1;
+        }
+
+        println!("{} ({})", next, action);
+    }
     println!("Result: {}", increased_count);
 }
