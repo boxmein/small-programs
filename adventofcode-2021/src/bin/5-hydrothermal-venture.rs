@@ -50,6 +50,7 @@ use std::time::Duration;
 use sdl2::pixels::Color;
 use sdl2::event::Event;
 use sdl2::keyboard::Keycode;
+use sdl2::render::BlendMode;
 
 #[derive(Debug, PartialEq, Hash)]
 enum Positivity {
@@ -118,6 +119,10 @@ struct LineSegment(Point, Point);
 
 impl LineSegment {
   // https://stackoverflow.com/a/3842157/2278637
+  // NOTE: this approach will not work because there are two lines that
+  // are parallel and on top of each other, causing more than 1 point!
+  // NOTE 2: this approach will also not work because there are multiple lines
+  // that intersect at the same location
   pub fn intersects(&self, other: &LineSegment) -> bool {
     let A = &self.0;
     let B = &self.1; 
@@ -250,6 +255,7 @@ fn main() {
   let mut canvas = window.into_canvas().build().unwrap();
 
   canvas.set_draw_color(Color::RGB(0, 255, 255));
+  canvas.set_blend_mode(BlendMode::Add);
   canvas.clear();
   canvas.present();
 
@@ -269,6 +275,9 @@ fn main() {
       }
     }
     // The rest of the game loop goes here...
+
+    canvas.set_draw_color(Color::RGB(60, 0, 0));
+
 
     for line in map.iter_lines() {
       canvas.draw_line(
