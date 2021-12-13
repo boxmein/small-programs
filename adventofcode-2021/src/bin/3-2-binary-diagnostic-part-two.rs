@@ -35,7 +35,6 @@
 use std::io::{stdin, BufRead};
 
 type IntType = i32;
-type UnsignedIntType = u32;
 const INT_SIZE: usize = 32;
 
 trait BitAt {

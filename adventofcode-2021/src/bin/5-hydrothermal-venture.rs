@@ -124,37 +124,37 @@ impl LineSegment {
   // NOTE 2: this approach will also not work because there are multiple lines
   // that intersect at the same location
   pub fn intersects(&self, other: &LineSegment) -> bool {
-    let A = &self.0;
-    let B = &self.1; 
-    let C = &other.0;
-    let D = &other.1;
+    let a = &self.0;
+    let b = &self.1; 
+    let c = &other.0;
+    let d = &other.1;
 
     let left0 = Mat2x2(
-      A.x - C.x,
-      B.x - C.x,
-      A.y - C.y,
-      B.y - C.y
+      a.x - c.x,
+      b.x - c.x,
+      a.y - c.y,
+      b.y - c.y
     ).determinant().sign();
 
     let right0 = Mat2x2(
-      A.x - D.x,
-      B.x - D.x,
-      A.y - D.y,
-      B.y - D.y
+      a.x - d.x,
+      b.x - d.x,
+      a.y - d.y,
+      b.y - d.y
     ).determinant().sign();
 
     let left1 = Mat2x2(
-      C.x - A.x,
-      D.x - A.x,
-      C.y - A.y,
-      D.y - A.y
+      c.x - a.x,
+      d.x - a.x,
+      c.y - a.y,
+      d.y - a.y
     ).determinant().sign();
     
     let right1 = Mat2x2(
-      C.x - B.x,
-      D.x - B.x,
-      C.y - B.y,
-      D.y - B.y
+      c.x - b.x,
+      d.x - b.x,
+      c.y - b.y,
+      d.y - b.y
     ).determinant().sign();
 
     left0 != right0 &&
@@ -210,9 +210,6 @@ impl Map {
     self.vertices.iter()
   }
 }
-
-
-
 
 fn commands(stream: impl BufRead) -> impl Iterator<Item = String> {
     stream

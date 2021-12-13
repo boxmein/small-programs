@@ -108,8 +108,6 @@ impl BingoBoard {
 
     fn any_row_wins(&self) -> bool {
         assert!(self.numbers.len() > 0);
-        let width = 5;
-
         for row in &self.numbers {
             let mut col_has_unmarked = false;
 
@@ -147,26 +145,26 @@ impl BingoBoard {
         return false;
     }
 
-    fn diagonal_ltr_wins(&self) -> bool {
-        let n = &self.numbers;
+    // fn diagonal_ltr_wins(&self) -> bool {
+    //     let n = &self.numbers;
         
-        n[0][0].marked &&
-        n[1][1].marked &&
-        n[2][2].marked &&
-        n[3][3].marked &&
-        n[4][4].marked
-    }
+    //     n[0][0].marked &&
+    //     n[1][1].marked &&
+    //     n[2][2].marked &&
+    //     n[3][3].marked &&
+    //     n[4][4].marked
+    // }
 
 
-    fn diagonal_rtl_wins(&self) -> bool {
-        let n = &self.numbers;
+    // fn diagonal_rtl_wins(&self) -> bool {
+    //     let n = &self.numbers;
         
-        n[0][4].marked &&
-        n[1][3].marked &&
-        n[2][2].marked &&
-        n[3][1].marked &&
-        n[4][0].marked
-    }
+    //     n[0][4].marked &&
+    //     n[1][3].marked &&
+    //     n[2][2].marked &&
+    //     n[3][1].marked &&
+    //     n[4][0].marked
+    // }
 
 
     pub fn score(&self) -> i32 {
@@ -289,7 +287,7 @@ fn main() {
     }
 
     // apply all marks to all bingo boards;
-    'mark_loop: for mark in marks {
+    for mark in marks {
         for board in &mut boards {
             if board.wins() {
                 continue;
@@ -298,7 +296,6 @@ fn main() {
                 let score = board.score();
                 println!("board wins with score: {}", score);
                 // 4.2 solution: comment this line
-                // break 'mark_loop;
             }
 
             println!("Marked ({}) board: \n{}", mark, board);
