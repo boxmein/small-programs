@@ -94,7 +94,7 @@ macro_rules! char_iter {
             .map(|s| to_char!(s))
     }
 }
-
+/*
 macro_rules! char_set {
     ($t:expr) => {
         char_iter!($t)
@@ -104,6 +104,7 @@ macro_rules! char_set {
         HashSet::new()
     }
 }
+*/
 
 
 //region Seven segment model
