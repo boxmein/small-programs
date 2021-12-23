@@ -250,10 +250,19 @@ fn main() -> CrosstermResult<()> {
     write!(stdout, "{}", data);
 
     data = finish_tick(data);
+
+    if generation >= 100 {
+      break;
+    }
+
     thread::sleep(Duration::from_millis(100));
   }
 
   stdout.execute(LeaveAlternateScreen)?;
+
+  println!("Result: {}", get_flashes());
+
+  Ok(())
 }
 
 #[cfg(test)]
