@@ -1,194 +1,265 @@
 
-use sdl2::pixels::Color;
-use sdl2::event::Event;
-use sdl2::keyboard::Keycode;
-use sdl2::render::BlendMode;
 use std::time::Duration;
-use std::cell::UnsafeCell;
-use typed_arena::Arena;
+use std::io::{stdin, BufRead, stdout, Write};
+use crossterm::{
+  Result as CrosstermResult,
+  ExecutableCommand,
+  terminal::{
+    EnterAlternateScreen,
+    LeaveAlternateScreen,
+    Clear,
+    ClearType,
+  },
+  cursor::{
+    MoveTo
+  },
+  style::{
+    SetForegroundColor,
+    Color,
+    ResetColor,
+  },
+};
+use std::fmt;
+use std::thread;
+use std::str::FromStr;
+
+static mut TOTAL_FLASHES: i32 = 0;
+
+fn count_flash() {
+  unsafe {
+    TOTAL_FLASHES += 1;
+  }
+}
+
+fn get_flashes() -> i32 {
+  let flashes = unsafe { TOTAL_FLASHES };
+  return flashes;
+}
 
 #[derive(Default, Debug, Clone)]
 struct Octopus {
-  value: i32,
-  flashed: bool,
+  pub value: i32,
+  pub flashed: bool,
 }
 
-#[derive(Debug)]
-struct Node<'a> {
-    data: Octopus,
-    edges: UnsafeCell<Vec<&'a Node<'a>>>,
-}
-
-struct Graph<'a> {
-  arena: &'a Arena<Node<'a>>,
-}
-
-impl<'a> Graph<'a> {
-  pub fn new(arena: &'a Arena<Node<'a>>) -> Self {
+impl Octopus {
+  pub fn new(value: i32) -> Self {
     Self {
-      arena
+      value,
+      flashed: false,
     }
   }
 
-  pub fn create_node(&mut self, value: i32) -> &'a Node<'a> {
-    self.arena.alloc(Node::new(value))
+  pub fn step(&mut self) {
+    self.value += 1;
+  }
+
+  pub fn flash(&mut self) {
+    count_flash();
+    self.flashed = true;
+    self.value = 0;
   }
 }
 
-impl<'a> Node<'a> {
-  pub fn new(
-    value: i32
-  ) -> Self {
-    Self {
-      data: Octopus {
-        value,
-        flashed: false,
-      },
-      edges: UnsafeCell::new(Vec::new()),
+impl std::fmt::Display for Octopus {
+  fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+    if self.flashed {
+      write!(f, "{}{}{}",
+        SetForegroundColor(Color::Magenta),
+        "0",
+        ResetColor,
+      )
+    } else {
+      write!(f, "{}", self.value)
     }
   }
+}
 
-  pub fn incr(&mut self) {
-    self.data.value += 1;
+#[derive(Clone)]
+struct Octos(Vec<Vec<Octopus>>);
+
+impl<'a> Octos {
+  pub fn at(&'a mut self, x: usize, y: usize) -> &'a mut Octopus {
+    &mut self.0[y][x]
   }
+  pub fn has(&self, x: usize, y: usize) -> bool {
+    self.0.len() > y &&
+    self.0[y].len() > x
+  }
+}
 
-  pub fn incr_cascade_flash(&mut self) {
-    self.incr();
-
-    if self.data.value > 9 {
-      self.flash();
+impl std::fmt::Display for Octos {
+  fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+    for row in &self.0 {
+      for col in row {
+        write!(f, "{}", col)?;
+      }
+      write!(f, "\n")?;
     }
+    Ok(())
   }
+}
 
-  pub fn flash_if_needed(&mut self) {
-    if self.data.value > 9 {
-      self.flash();
+impl FromStr for Octos {
+    type Err = &'static str;
+    fn from_str(value: &str) -> Result<Self, Self::Err> {
+        let mut f = Octos(Vec::new());
+
+        let arr = value
+                .split("\n")
+                .filter(|x| x.len() > 0)
+                .map(|x|x.to_owned())
+                .collect::<Vec<String>>();
+
+        for (y, row) in arr.iter().enumerate() {
+
+          f.0.push(Vec::new());
+
+          for (x, col) in row.chars().enumerate() {
+            f.0[y].push(Octopus::new(
+              col.to_digit(10).unwrap().try_into().unwrap(),
+            ));
+          }
+        } 
+
+        Ok(f)
     }
-  }
+}
 
+fn octovec(width: usize, height: usize) -> Octos {
+  // https://stackoverflow.com/a/36376568/2278637
+  // Base 1d array
+  let mut grid_raw: Vec<Octopus> = vec![Octopus::default(); width * height];
+
+  // Vector of 'width' elements slices
+  let octos = grid_raw
+    .as_mut_slice()
+    .chunks_mut(width)
+    .map(|chunk| Vec::from(chunk))
+    .collect::<Vec<Vec<Octopus>>>();
+
+  Octos(octos)
+}
+
+fn run_increment(data: Octos) -> Octos {
+  let mut new_octos = data.clone();
   
-  fn flash(&mut self) {
-    if !self.data.flashed {
-      println!("flashed! neighbors: {}", (*self.edges.get()).len());
-      self.data.flashed = true;
-      self.data.value = 0;
-      unsafe {
-        for neighbor in &mut (*self.edges.get()) {
-          neighbor.incr_cascade_flash();
-          println!("flashed neighbor: {:?}", neighbor);
+  // Step 1: each octopus energy level increases by 1.
+  for row in &mut new_octos.0 {
+    for col in row {
+      col.step();
+    }
+  }
+
+  new_octos
+}
+
+fn flash_point(data: &mut Octos, center: (usize, usize)) {
+  let mut octo = data.at(center.0, center.1);
+  octo.step();
+  if octo.value > 9 && !octo.flashed {
+    octo.flash();
+    for dy in -1i32..2 {
+      for dx in -1i32..2 {
+        let xx: i32 = center.0 as i32 + dx;
+        let yy: i32 = center.1 as i32 + dy;
+
+        if data.has(xx as usize, yy as usize) &&
+          !data.at(xx as usize, yy as usize).flashed {
+          flash_point(data, (xx as usize, yy as usize));
         }
       }
     }
   }
+}
 
-  pub fn begin_new_turn(&mut self) {
-    self.data.flashed = false;
+fn run_flash(data: Octos) -> Octos {
+  let mut new_octos = data.clone();
+
+
+  for y in 0..new_octos.0.len() {
+    let row_size = new_octos.0[y].len();
+    for x in 0..row_size {
+      if new_octos.at(x, y).value > 9 {
+        flash_point(&mut new_octos, (x, y));
+      }
+    }
   }
 
-  pub fn value(&self) -> i32 {
-    self.data.value
+  new_octos
+}
+
+fn reset_flashed(data: Octos) -> Octos {
+  let mut new_octos = data.clone();
+
+  for mut row in &mut new_octos.0 {
+    for mut col in row {
+      if col.flashed {
+        col.flashed = false;
+      }
+    }
   }
 
-  pub fn add_neighbor(&mut self, neighbor: &'a Node<'a>) {
-    (*self.edges.get()).push(neighbor);
+  new_octos
+}
+
+fn tick_upto_reset(data: Octos) -> Octos {
+  let step_1 = run_increment(data);
+  run_flash(step_1)
+}
+
+fn finish_tick(data: Octos) -> Octos {
+  reset_flashed(data)
+}
+
+fn main() -> CrosstermResult<()> {
+
+  let mut s: String = String::default();
+  for line in stdin()
+    .lock()
+    .lines()
+    .filter(|value| value.is_ok())
+    .map(|value| value.expect("stdin failure")) {
+    s += &line;
+    s += "\n";
   }
+
+  println!("loaded {} lines", s.split("\n").count());
+
+  let mut data = s.parse::<Octos>().expect("failed to parse octos");
+
+  // let mut data = octovec(10, 10);
+  let mut stdout = stdout();
+
+  stdout.execute(EnterAlternateScreen)?;
+  stdout.execute(Clear(ClearType::All));
+
+  let mut generation = 0;
+
+  loop {
+    generation += 1;
+    data = tick_upto_reset(data);
+
+    stdout.execute(MoveTo(1, 1))?;
+    write!(stdout, "Generation: {}", generation);
+
+    stdout.execute(MoveTo(1, 2))?;
+    write!(stdout, "Flashes: {}", get_flashes());
+
+    stdout.execute(MoveTo(1, 4))?;
+    write!(stdout, "{}", data);
+
+    data = finish_tick(data);
+    thread::sleep(Duration::from_millis(100));
+  }
+
+  stdout.execute(LeaveAlternateScreen)?;
 }
 
 #[cfg(test)]
 mod tests {
   use super::*;
-  #[test]
-  fn octopus_counts_flashes() {
-    let mut octo = Node::new(1);
-
-    octo.incr();
-    octo.incr();
-    octo.incr();
-
-    assert_eq!(octo.value(), 4);
-  }
-
-  #[test]
-  fn octopus_flashes_if_above_9() {
-    let mut octo = Node::new(8);
-
-    octo.incr();
-    octo.incr();
-    octo.incr();
-
-    octo.flash_if_needed();
-
-    assert_eq!(octo.value(), 0);
-  }
-
-  #[test]
-  fn octopus_doesnt_flash_if_9() {
-    let mut octo = Node::new(8);
-
-    octo.incr();
-
-    octo.flash_if_needed();
-
-    assert_eq!(octo.value(), 9);
-  }
-
-  #[test]
-  fn octopus_flash_increments_neigbor() {
-    let arena: Arena<Node> = Arena::new();
-
-    let mut g = Graph::new(&arena);
-
-    let mut octo = g.create_node(8);
-    let mut octo2 = g.create_node(8);
-
-    (*octo).add_neighbor(octo2);
-
-    octo.incr();
-    octo.incr();
-
-    octo.flash_if_needed();
-
-    assert_eq!(octo.value(), 0);
-    assert_eq!(octo2.value(), 9);
-  }
-}
-
-fn main() {
-  let sdl_context = sdl2::init().unwrap();
-  let video_subsystem = sdl_context.video().unwrap();
-
-  let window = video_subsystem.window("Dumbo Octopus", 1000, 1000)
-    .position_centered()
-    .build()
-    .unwrap();
-
-  let mut canvas = window.into_canvas().build().unwrap();
-
-  canvas.set_draw_color(Color::RGB(0, 255, 255));
-  canvas.set_blend_mode(BlendMode::Add);
-  canvas.clear();
-  canvas.present();
-
-  let mut event_pump = sdl_context.event_pump().unwrap();
-  'running: loop {
-    canvas.set_draw_color(Color::RGB(0, 0, 0));
-
-    canvas.clear();
-
-    for event in event_pump.poll_iter() {
-      match event {
-        Event::Quit {..} |
-        Event::KeyDown { keycode: Some(Keycode::Escape), .. } => {
-            break 'running
-        },
-        _ => {}
-      }
-    }
-    // The rest of the game loop goes here...
-
-    canvas.set_draw_color(Color::RGB(60, 0, 0));
-
-    canvas.present();
-    ::std::thread::sleep(Duration::new(0, 1_000_000_000u32 / 60));
+  #[test] 
+  fn floor_from_str() {
   }
 }
