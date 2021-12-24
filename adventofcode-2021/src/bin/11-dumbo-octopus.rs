@@ -212,6 +212,17 @@ fn finish_tick(data: Octos) -> Octos {
   reset_flashed(data)
 }
 
+fn detect_all_flash(data: &Octos) -> bool {
+  for row in &data.0 {
+    for col in row {
+      if !col.flashed {
+        return false;
+      }
+    }
+  }
+  return true;
+}
+
 fn main() -> CrosstermResult<()> {
 
   let mut s: String = String::default();
@@ -249,18 +260,19 @@ fn main() -> CrosstermResult<()> {
     stdout.execute(MoveTo(1, 4))?;
     write!(stdout, "{}", data);
 
-    data = finish_tick(data);
-
-    if generation >= 100 {
+    if detect_all_flash(&data) {
       break;
     }
 
-    thread::sleep(Duration::from_millis(100));
+    data = finish_tick(data);
+
+    thread::sleep(Duration::from_millis(16));
   }
 
   stdout.execute(LeaveAlternateScreen)?;
 
-  println!("Result: {}", get_flashes());
+  println!("Generation at the end: {}", generation);
+  println!("Flashes at end: {}", get_flashes());
 
   Ok(())
 }
