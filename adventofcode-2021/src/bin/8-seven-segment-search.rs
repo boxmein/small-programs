@@ -1,4 +1,3 @@
-
 // --- Day 8: Seven Segment Search ---
 //region Intro
 // You barely reach the safety of the cave when the whale smashes into the cave mouth, collapsing it. Sensors indicate another exit to this cave at a much greater depth, so you have no choice but to press on.
@@ -69,30 +68,25 @@
 
 // In the output values, how many times do digits 1, 4, 7, or 8 appear?
 
+use itertools::Itertools;
+use std::collections::{HashMap, HashSet};
 use std::io::{stdin, BufRead};
 use std::str::FromStr;
-use std::collections::{HashMap, HashSet};
-use itertools::Itertools;
 
 macro_rules! to_char {
-    ($t:expr) => {
-        {
-            if $t.len() == 1 {
-                $t.chars().next().unwrap()
-            } else {
-                panic!("input {:?} is not 1 length", $t)
-            }
+    ($t:expr) => {{
+        if $t.len() == 1 {
+            $t.chars().next().unwrap()
+        } else {
+            panic!("input {:?} is not 1 length", $t)
         }
-    }
+    }};
 }
 
 macro_rules! char_iter {
     ($t:expr) => {
-        $t
-            .split("")
-            .filter(|s| s.len() > 0)
-            .map(|s| to_char!(s))
-    }
+        $t.split("").filter(|s| s.len() > 0).map(|s| to_char!(s))
+    };
 }
 /*
 macro_rules! char_set {
@@ -106,7 +100,6 @@ macro_rules! char_set {
 }
 */
 
-
 //region Seven segment model
 #[derive(Debug, PartialEq, Eq, Hash, Clone)]
 enum SevenSegment {
@@ -119,18 +112,15 @@ enum SevenSegment {
     Six,
     Seven,
     Eight,
-    Nine
+    Nine,
 }
 
 impl FromStr for SevenSegment {
     type Err = &'static str;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let sorted_letters = s
-            .chars()
-            .sorted()
-            .collect::<String>();
-        
+        let sorted_letters = s.chars().sorted().collect::<String>();
+
         match sorted_letters.as_str() {
             "abcefg" => Ok(SevenSegment::Zero),
             "cf" => Ok(SevenSegment::One),
@@ -172,12 +162,12 @@ fn determine_seven_segment(s: &str) -> Option<SevenSegment> {
 // #   four    #
 // we go over the next length (4-wide) and determine which of the two are new
 // eg. "bafg" means 4, therefore "f" is b or d, "g" is b or d
-// #   
+// #
 
 //region Interpolator
 
 #[derive(Default, Debug)]
-struct SevenSegmentInterpolator { 
+struct SevenSegmentInterpolator {
     pub examples: Vec<String>,
     pub appeared_in: HashMap<char, HashSet<SevenSegment>>,
     pub digits: Vec<String>,
@@ -226,7 +216,7 @@ impl SevenSegmentInterpolator {
                         (*set).insert(n.clone());
                     }
                 }
-            },
+            }
             _ => {}
         }
     }
@@ -238,8 +228,6 @@ impl SevenSegmentInterpolator {
     // E: appears in 0, 2, 6, 8
     // F: appears in 0, 1, 3, 4, 5, 6, 7, 8, 9
     // G: appears in 0, 2, 3, 5, 6, 8, 9
-
-
 }
 //endregion
 
@@ -251,14 +239,8 @@ struct InputCommand {
 }
 
 impl InputCommand {
-    pub fn new(
-        examples: Vec<String>,
-        digits: Vec<String>
-    ) -> Self {
-        Self {
-            examples,
-            digits
-        }
+    pub fn new(examples: Vec<String>, digits: Vec<String>) -> Self {
+        Self { examples, digits }
     }
 }
 
@@ -269,17 +251,17 @@ impl FromStr for InputCommand {
         // => ["abdgfk dg dsgi sgi ", " fkfksd osdgo"]
 
         let arr = value
-                .split("|")
-                .map(|x|x.to_owned())
-                .collect::<Vec<String>>();
+            .split("|")
+            .map(|x| x.to_owned())
+            .collect::<Vec<String>>();
 
         // "abdgfk dg dsgi sgi "
         // => ["abdgfk", "dg", "dsgi", "sgi"]
         let mut left = arr[0]
-                .split(" ")
-                .filter(|x| x.len() > 0)
-                .map(|x|x.to_owned())
-                .collect::<Vec<String>>();
+            .split(" ")
+            .filter(|x| x.len() > 0)
+            .map(|x| x.to_owned())
+            .collect::<Vec<String>>();
 
         // ["abdgfk", "dg", "dsgi", "sgi"]
         // => ["dg", "sgi", "dsgi", "abdgfk"]
@@ -301,16 +283,13 @@ impl FromStr for InputCommand {
         let right = arr[1]
             .split(" ")
             .filter(|x| x.len() > 0)
-            .map(|x|x.to_owned())
+            .map(|x| x.to_owned())
             .collect::<Vec<String>>();
-        
-        Ok(
-            InputCommand::new(left, right)
-        )
+
+        Ok(InputCommand::new(left, right))
     }
 }
 //endregion
-
 
 fn commands(stream: impl BufRead) -> Vec<InputCommand> {
     stream
@@ -322,8 +301,7 @@ fn commands(stream: impl BufRead) -> Vec<InputCommand> {
 }
 
 fn main() {
-
-    // part 1: 
+    // part 1:
     /*
     let mut count = 0;
     for command in commands(stdin().lock()) {
@@ -350,23 +328,24 @@ mod tests {
     #[test]
     fn commands_works() {
         let mut input = b"acedgfb cdfbe gcdfa fbcad dab cefabd cdfgeb eafb cagedb ab | cdfeb fcadb cdfeb cdbaf\n" as &[u8];
-        
+
         let command = commands(&mut input);
 
-        assert_eq!(command[0], InputCommand::new(
-            vec![
-                "ab",
-                "dab",
-                "eafb",
-                "gcdfa",
-                "fbcad",
-                "cdfbe",
-                "cefabd",
-                "cdfgeb",
-                "cagedb",
-                "acedgfb",
-            ].into_iter().map(|x|x.to_owned()).collect::<Vec<String>>(),
-            vec!["cdfeb", "fcadb", "cdfeb", "cdbaf"].into_iter().map(|x|x.to_owned()).collect::<Vec<String>>()
-        ));
+        assert_eq!(
+            command[0],
+            InputCommand::new(
+                vec![
+                    "ab", "dab", "eafb", "gcdfa", "fbcad", "cdfbe", "cefabd", "cdfgeb", "cagedb",
+                    "acedgfb",
+                ]
+                .into_iter()
+                .map(|x| x.to_owned())
+                .collect::<Vec<String>>(),
+                vec!["cdfeb", "fcadb", "cdfeb", "cdbaf"]
+                    .into_iter()
+                    .map(|x| x.to_owned())
+                    .collect::<Vec<String>>()
+            )
+        );
     }
 }

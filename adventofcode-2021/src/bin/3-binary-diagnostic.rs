@@ -48,7 +48,7 @@ impl BinaryDiagnostic {
 
         BinaryDiagnostic {
             zero_counts,
-            one_counts
+            one_counts,
         }
     }
     pub fn accept(&mut self, inp: IntType) {
@@ -56,7 +56,7 @@ impl BinaryDiagnostic {
             match bit {
                 0 => self.zero_counts[i] += 1,
                 1 => self.one_counts[i] += 1,
-                _ => ()
+                _ => (),
             }
         }
     }
@@ -87,7 +87,7 @@ impl BinaryDiagnostic {
         assert!(bit_count <= INT_SIZE);
         let mut gamma_str = "".to_owned();
         for i in 0..bit_count {
-            let mc = self.most_common_for_bit(i); 
+            let mc = self.most_common_for_bit(i);
             gamma_str += mc.to_string().as_ref();
         }
 
@@ -98,7 +98,7 @@ impl BinaryDiagnostic {
         assert!(bit_count <= INT_SIZE);
         let mut epsilon_str = "".to_owned();
         for i in 0..bit_count {
-            let mc = self.least_common_for_bit(i as usize); 
+            let mc = self.least_common_for_bit(i as usize);
             epsilon_str += mc.to_string().as_ref();
         }
 
@@ -108,13 +108,11 @@ impl BinaryDiagnostic {
     fn most_common_for_bit(&self, bit_number: usize) -> IntType {
         assert!(bit_number <= INT_SIZE - 1);
 
-        if self.zero_counts[bit_number] == 0 &&
-           self.one_counts[bit_number] == 0 {
+        if self.zero_counts[bit_number] == 0 && self.one_counts[bit_number] == 0 {
             return 0;
         }
 
-        if self.zero_counts[bit_number] >
-           self.one_counts[bit_number] {
+        if self.zero_counts[bit_number] > self.one_counts[bit_number] {
             0
         } else {
             1
@@ -128,8 +126,7 @@ impl BinaryDiagnostic {
             return 0;
         }
 
-        let more_zeros_than_ones = self.zero_counts[bit_number] >
-        self.one_counts[bit_number];
+        let more_zeros_than_ones = self.zero_counts[bit_number] > self.one_counts[bit_number];
         if more_zeros_than_ones {
             1
         } else {
@@ -140,15 +137,12 @@ impl BinaryDiagnostic {
 
 struct IntBitIterator {
     value: IntType,
-    at: usize
+    at: usize,
 }
 
 impl IntBitIterator {
     pub fn new(value: IntType) -> Self {
-        IntBitIterator {
-            value,
-            at: 0
-        }
+        IntBitIterator { value, at: 0 }
     }
 
     fn bit_at(&self, bit_number: usize) -> IntType {
@@ -173,7 +167,7 @@ fn iterate_over_bits(i: IntType) -> impl Iterator<Item = IntType> {
     IntBitIterator::new(i)
 }
 
-struct IntBitBuilder(UnsignedIntType); 
+struct IntBitBuilder(UnsignedIntType);
 
 impl IntBitBuilder {
     pub fn new() -> Self {
@@ -181,7 +175,7 @@ impl IntBitBuilder {
     }
 
     pub fn set_bit(&mut self, position: usize, value: IntType) {
-        let mut val = self.0; 
+        let mut val = self.0;
 
         if value == 1 {
             val = val | (1 << position);
@@ -208,8 +202,7 @@ fn commands(stream: impl BufRead) -> impl Iterator<Item = String> {
 fn main() {
     let mut diagnosticator = BinaryDiagnostic::new();
     let mut bit_count: usize = 0;
-    for command in commands(stdin()
-    .lock()) {
+    for command in commands(stdin().lock()) {
         let command_length = command.len();
         if command_length > bit_count {
             bit_count = command_length;
@@ -221,19 +214,26 @@ fn main() {
     let epsilon: UnsignedIntType = diagnosticator.epsilon();
     let gamma: UnsignedIntType = diagnosticator.gamma();
 
-    println!("Epsilon: {} ({})", epsilon, diagnosticator.report_epsilon_for_bit_count(bit_count));
-    println!("Gamma:   {} ({})", gamma, diagnosticator.report_gamma_for_bit_count(bit_count));
+    println!(
+        "Epsilon: {} ({})",
+        epsilon,
+        diagnosticator.report_epsilon_for_bit_count(bit_count)
+    );
+    println!(
+        "Gamma:   {} ({})",
+        gamma,
+        diagnosticator.report_gamma_for_bit_count(bit_count)
+    );
     println!("Result: {}", epsilon * gamma);
 }
 
-
 #[cfg(test)]
 mod tests {
-    use super::{IntBitIterator, IntBitBuilder, BinaryDiagnostic};
+    use super::{BinaryDiagnostic, IntBitBuilder, IntBitIterator};
     #[test]
     fn int_bit_iterator_works() {
         let iter = IntBitIterator::new(0b1010110011110000);
-        let results = iter.collect::<Vec<i32>>(); 
+        let results = iter.collect::<Vec<i32>>();
 
         assert_eq!(results[15], 1);
         assert_eq!(results[14], 0);

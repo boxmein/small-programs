@@ -6,8 +6,8 @@
 
 // How many lanternfish would there be after 256 days?
 
-use std::io::{stdin, BufRead};
 use std::collections::HashMap;
+use std::io::{stdin, BufRead};
 
 const DAYS: usize = 256;
 
@@ -18,19 +18,19 @@ impl Ocean {
     pub fn new(fishies: &[u8]) -> Self {
         let mut lanternfish_by_age: HashMap<u8, u64> = HashMap::new();
 
-
         for age in 0..9u8 {
             lanternfish_by_age.insert(age, 0);
         }
 
         for fish in fishies {
-            lanternfish_by_age.insert(
-                *fish, 
-                lanternfish_by_age[fish] + 1
-            );
+            lanternfish_by_age.insert(*fish, lanternfish_by_age[fish] + 1);
         }
 
-        println!("Added {} fishies to the ocean: {:?}", fishies.len(), lanternfish_by_age);
+        println!(
+            "Added {} fishies to the ocean: {:?}",
+            fishies.len(),
+            lanternfish_by_age
+        );
 
         Ocean(lanternfish_by_age)
     }
@@ -97,7 +97,8 @@ fn main() {
     for day in 0..DAYS {
         ocean.tick_day();
 
-        println!("day {:>3}: {:>9} lanternfish, {:>6} spawned ({:?})",
+        println!(
+            "day {:>3}: {:>9} lanternfish, {:>6} spawned ({:?})",
             day,
             ocean.total_fish(),
             ocean.count_fish_with_age(8u8),

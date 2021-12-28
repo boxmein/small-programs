@@ -4,13 +4,13 @@
 
 // Instead, consider sums of a three-measurement sliding window. Again considering the above example:
 
-// 199  A      
-// 200  A B    
-// 208  A B C  
+// 199  A
+// 200  A B
+// 208  A B C
 // 210    B C D
 // 200  E   C D
 // 207  E F   D
-// 240  E F G  
+// 240  E F G
 // 269    F G H
 // 260      G H
 // 263        H
@@ -31,13 +31,14 @@
 // In this example, there are 5 sums that are larger than the previous sum.
 
 // Consider sums of a three-measurement sliding window. How many sums are larger than the previous sum?
-use std::io::{stdin, BufRead};
 use itertools::Itertools;
+use std::io::{stdin, BufRead};
 
 fn iterate_over_triplet_windows(
-    reader: impl BufRead
+    reader: impl BufRead,
 ) -> impl Iterator<Item = (String, String, String)> {
-    let lines = reader.lines()
+    let lines = reader
+        .lines()
         .filter(|value| value.is_ok())
         .map(|value| value.unwrap());
     return lines.tuple_windows();
@@ -62,7 +63,7 @@ fn main() {
         let prev = sum_tuple(&lefty);
         let next = sum_tuple(&righty);
 
-        let action = if prev < next { 
+        let action = if prev < next {
             "increased"
         } else if prev > next {
             "decreased"

@@ -49,8 +49,8 @@
 
 // Find a way to simulate lanternfish. How many lanternfish would there be after 80 days?
 
-use std::io::{stdin, BufRead};
 use std::fmt;
+use std::io::{stdin, BufRead};
 
 const DAYS: usize = 80;
 
@@ -101,7 +101,8 @@ fn main() {
             }
         }
 
-        print!("\rday {:>3}: {:0>6} lanternfish, {:0>6} spawned",
+        print!(
+            "\rday {:>3}: {:0>6} lanternfish, {:0>6} spawned",
             day,
             lanternfish.len() + new_lanternfish.len(),
             new_lanternfish.len()

@@ -55,9 +55,9 @@
 
 // Figure out which board will win last. Once it wins, what would its final score be?
 
-use std::io::{stdin, BufRead};
-use std::fmt;
 use itertools::Itertools;
+use std::fmt;
+use std::io::{stdin, BufRead};
 
 #[derive(Debug, Default)]
 struct BingoField {
@@ -68,7 +68,7 @@ struct BingoField {
 impl BingoField {
     pub fn new(value: i32) -> Self {
         BingoField {
-            value, 
+            value,
             marked: false,
         }
     }
@@ -100,17 +100,15 @@ impl BingoBoard {
     }
 
     pub fn wins(&self) -> bool {
-        self.any_row_wins() ||
-        self.any_column_wins() // || 
-        // self.diagonal_ltr_wins() ||
-        // self.diagonal_rtl_wins()
+        self.any_row_wins() || self.any_column_wins() // ||
+                                                      // self.diagonal_ltr_wins() ||
+                                                      // self.diagonal_rtl_wins()
     }
 
     fn any_row_wins(&self) -> bool {
         assert!(self.numbers.len() > 0);
         for row in &self.numbers {
             let mut col_has_unmarked = false;
-
 
             for col in row {
                 if !col.marked {
@@ -129,14 +127,13 @@ impl BingoBoard {
         assert!(self.numbers.len() > 0);
         let width = 5;
         for col in 0..width {
-
             let mut col_has_unmarked = false;
             for row in &self.numbers {
                 if !row[col].marked {
                     col_has_unmarked = true;
                 }
             }
-            
+
             if col_has_unmarked {
                 continue;
             }
@@ -147,7 +144,7 @@ impl BingoBoard {
 
     // fn diagonal_ltr_wins(&self) -> bool {
     //     let n = &self.numbers;
-        
+
     //     n[0][0].marked &&
     //     n[1][1].marked &&
     //     n[2][2].marked &&
@@ -155,17 +152,15 @@ impl BingoBoard {
     //     n[4][4].marked
     // }
 
-
     // fn diagonal_rtl_wins(&self) -> bool {
     //     let n = &self.numbers;
-        
+
     //     n[0][4].marked &&
     //     n[1][3].marked &&
     //     n[2][2].marked &&
     //     n[3][1].marked &&
     //     n[4][0].marked
     // }
-
 
     pub fn score(&self) -> i32 {
         self.unmarked_sum() * self.last_marked
@@ -198,20 +193,21 @@ impl BingoBoard {
     pub fn new(board: &[&str]) -> Self {
         assert_eq!(board.len(), 5);
 
-        let board: Vec<Vec<BingoField>> = 
-            board.iter()
-                .map(|s| {
-                    let result = s.split_whitespace()
-                        .into_iter()
-                        .map(|s| s.parse::<i32>().expect("int parsing error"))
-                        .map(|i| BingoField::new(i))
-                        .collect::<Vec<BingoField>>();
-                    assert_eq!(result.len(), 5);
+        let board: Vec<Vec<BingoField>> = board
+            .iter()
+            .map(|s| {
+                let result = s
+                    .split_whitespace()
+                    .into_iter()
+                    .map(|s| s.parse::<i32>().expect("int parsing error"))
+                    .map(|i| BingoField::new(i))
+                    .collect::<Vec<BingoField>>();
+                assert_eq!(result.len(), 5);
 
-                    result
-                })
-                .collect::<Vec<Vec<BingoField>>>();
-        
+                result
+            })
+            .collect::<Vec<Vec<BingoField>>>();
+
         BingoBoard {
             numbers: board,
             last_marked: 0,
@@ -245,40 +241,37 @@ fn main() {
     let mut iter = commands(locked_stdin);
 
     // take the first line as vec of i32
-    let marks: Vec<i32> = iter.next()
+    let marks: Vec<i32> = iter
+        .next()
         .expect("at least 1 line in input")
         .split(",")
         .into_iter()
         .map(|item| item.parse::<i32>().expect("mark not i32"))
         .collect::<Vec<i32>>();
 
-    // consume bingo boards 
-    let mut boards = iter.batching(|it| {
-        // empty line 
-        match it.next() {
-            // end of sequence: end of bingo boards
-            None => None,
-            Some(_) => {
-                println!("consumed empty line, consuming 5 bingo lines");
-                // expect 5 lines
-                let first = it.next().expect("no first bingo line");
-                let second = it.next().expect("no second bingo line");
-                let third = it.next().expect("no third bingo line");
-                let fourth = it.next().expect("no fourth bingo line");
-                let fifth = it.next().expect("no fifth bingo line");
+    // consume bingo boards
+    let mut boards = iter
+        .batching(|it| {
+            // empty line
+            match it.next() {
+                // end of sequence: end of bingo boards
+                None => None,
+                Some(_) => {
+                    println!("consumed empty line, consuming 5 bingo lines");
+                    // expect 5 lines
+                    let first = it.next().expect("no first bingo line");
+                    let second = it.next().expect("no second bingo line");
+                    let third = it.next().expect("no third bingo line");
+                    let fourth = it.next().expect("no fourth bingo line");
+                    let fifth = it.next().expect("no fifth bingo line");
 
-                println!("consumed 5 bingo lines");
+                    println!("consumed 5 bingo lines");
 
-                Some(BingoBoard::new(&[
-                    &first,
-                    &second,
-                    &third,
-                    &fourth,
-                    &fifth,
-                ]))
+                    Some(BingoBoard::new(&[&first, &second, &third, &fourth, &fifth]))
+                }
             }
-        } 
-    }).collect::<Vec<BingoBoard>>();
+        })
+        .collect::<Vec<BingoBoard>>();
 
     println!("current bingoboards:");
 
@@ -306,7 +299,5 @@ fn main() {
 #[cfg(test)]
 mod tests {
     #[test]
-    fn test() {
-
-    }
+    fn test() {}
 }

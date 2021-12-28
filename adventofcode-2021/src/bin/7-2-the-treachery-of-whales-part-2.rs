@@ -39,13 +39,14 @@ fn fuel_part_two(fuel: i64) -> i64 {
     // suboptimal: (1..(fuel + 1)).sum()
 
     // https://stackoverflow.com/a/30386168
-    ((fuel-1)+1) * (1 + fuel) / 2
+    ((fuel - 1) + 1) * (1 + fuel) / 2
 }
 
 fn fuel(crabs: &[u64], to_pos: u64) -> i64 {
     let to_pos = to_pos as i64;
 
-    crabs.iter()
+    crabs
+        .iter()
         .map(|crab| (*crab as i64) - to_pos)
         .map(|fuel| fuel.abs())
         .map(|fuel| fuel_part_two(fuel))
@@ -72,44 +73,22 @@ fn main() {
 mod tests {
     use super::{fuel, fuel_part_two};
 
-
     #[test]
     fn fuel_is_correct() {
         // example input
-        assert_eq!(
-            fuel(
-                &[16, 1, 2, 0, 4, 2, 7, 1, 2, 14],
-                2
-            ),
-            206
-        )
+        assert_eq!(fuel(&[16, 1, 2, 0, 4, 2, 7, 1, 2, 14], 2), 206)
     }
 
     #[test]
     fn fuel_part_two_is_correct() {
-        assert_eq!(
-            fuel_part_two(4),
-            10
-        );
+        assert_eq!(fuel_part_two(4), 10);
 
-        assert_eq!(
-            fuel_part_two(16 - 5),
-            66
-        );
+        assert_eq!(fuel_part_two(16 - 5), 66);
 
-        assert_eq!(
-            fuel_part_two(5 - 2),
-            6
-        );
+        assert_eq!(fuel_part_two(5 - 2), 6);
 
-        assert_eq!(
-            fuel_part_two(5 - 0),
-            15
-        );
+        assert_eq!(fuel_part_two(5 - 0), 15);
 
-        assert_eq!(
-            fuel_part_two(14 - 5),
-            45
-        );
+        assert_eq!(fuel_part_two(14 - 5), 45);
     }
 }

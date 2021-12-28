@@ -22,8 +22,8 @@
 // After following these new instructions, you would have a horizontal position of 15 and a depth of 60. (Multiplying these produces 900.)
 
 // Using this new interpretation of the commands, calculate the horizontal position and depth you would have after following the planned course. What do you get if you multiply your final horizontal position by your final depth?
-use std::io::{stdin, BufRead};
 use std::default::Default;
+use std::io::{stdin, BufRead};
 use std::str::FromStr;
 
 // Submarine implementation
@@ -36,7 +36,7 @@ struct Submarine {
 }
 
 impl Submarine {
-    pub fn forward(&mut self, count: i64) { 
+    pub fn forward(&mut self, count: i64) {
         self.x += count;
         self.depth += self.aim * count;
     }
@@ -62,7 +62,7 @@ impl Submarine {
 enum Command {
     Up(i64),
     Down(i64),
-    Forward(i64)
+    Forward(i64),
 }
 
 #[derive(Debug)]
@@ -78,32 +78,30 @@ impl FromStr for Command {
     type Err = CommandParsingError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let coords: Vec<&str> = s
-                                 .split(' ')
-                                 .collect();
+        let coords: Vec<&str> = s.split(' ').collect();
 
         let word = coords[0];
 
         match word {
             "forward" => {
-                let distance = coords[1].parse::<i64>().map_err(|_| "Failed to parse i32")?;
-                Ok(
-                    Command::Forward(distance)
-                )
-            },
-            "down" => {
-                let distance = coords[1].parse::<i64>().map_err(|_| "Failed to parse int32")?;
-                Ok(
-                    Command::Down(distance)
-                )
-            },
-            "up" => {
-                let distance = coords[1].parse::<i64>().map_err(|_| "Failed to parse int32")?;
-                Ok(
-                    Command::Up(distance)
-                )
+                let distance = coords[1]
+                    .parse::<i64>()
+                    .map_err(|_| "Failed to parse i32")?;
+                Ok(Command::Forward(distance))
             }
-            _ => Err(CommandParsingError("No such command"))
+            "down" => {
+                let distance = coords[1]
+                    .parse::<i64>()
+                    .map_err(|_| "Failed to parse int32")?;
+                Ok(Command::Down(distance))
+            }
+            "up" => {
+                let distance = coords[1]
+                    .parse::<i64>()
+                    .map_err(|_| "Failed to parse int32")?;
+                Ok(Command::Up(distance))
+            }
+            _ => Err(CommandParsingError("No such command")),
         }
     }
 }
@@ -121,8 +119,7 @@ fn commands(stream: impl BufRead) -> impl Iterator<Item = Command> {
 fn main() {
     let mut sub = Submarine::default();
 
-    for command in commands(stdin()
-    .lock()) {
+    for command in commands(stdin().lock()) {
         sub.accept(command);
     }
 

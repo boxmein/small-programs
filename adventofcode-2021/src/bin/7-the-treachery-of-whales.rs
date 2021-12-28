@@ -49,7 +49,8 @@ fn commands(stream: impl BufRead) -> Vec<u32> {
 fn fuel(crabs: &[u32], to_pos: u32) -> i32 {
     let to_pos = to_pos as i32;
 
-    crabs.iter()
+    crabs
+        .iter()
         .map(|crab| (*crab as i32) - to_pos)
         .map(|crab| crab.abs())
         .sum()
@@ -77,12 +78,6 @@ mod tests {
     #[test]
     fn fuel_is_correct() {
         // example input
-        assert_eq!(
-            fuel(
-                &[16, 1, 2, 0, 4, 2, 7, 1, 2, 14],
-                2
-            ),
-            37
-        )
+        assert_eq!(fuel(&[16, 1, 2, 0, 4, 2, 7, 1, 2, 14], 2), 37)
     }
 }

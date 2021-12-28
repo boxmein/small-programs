@@ -30,8 +30,6 @@
 
 // Use the binary numbers in your diagnostic report to calculate the oxygen generator rating and CO2 scrubber rating, then multiply them together. What is the life support rating of the submarine? (Be sure to represent your answer in decimal, not binary.)
 
-
-
 use std::io::{stdin, BufRead};
 
 type IntType = i32;
@@ -71,7 +69,7 @@ impl BinaryDiagnostic {
             &self.values,
             self.bit_count - 1,
             &Commonality::MostCommon,
-            1
+            1,
         )
     }
 
@@ -80,21 +78,21 @@ impl BinaryDiagnostic {
             &self.values,
             self.bit_count - 1,
             &Commonality::LeastCommon,
-            0
+            0,
         )
     }
 }
 
 enum Commonality {
     MostCommon,
-    LeastCommon
+    LeastCommon,
 }
 
 fn recursive_filter(
     values: &[i32],
     start_bit: usize,
     commonality: &Commonality,
-    tie_breaker: i32
+    tie_breaker: i32,
 ) -> i32 {
     if values.len() == 0 {
         panic!("did not find it!");
@@ -114,7 +112,11 @@ fn recursive_filter(
         .cloned()
         .collect::<Vec<i32>>();
 
-    println!("iteration: common = {}, count = {}", common, new_values.len());
+    println!(
+        "iteration: common = {}, count = {}",
+        common,
+        new_values.len()
+    );
 
     if new_values.len() == 1 {
         return new_values[0];
@@ -125,10 +127,15 @@ fn recursive_filter(
     return recursive_filter(&new_values, start_bit - 1, commonality, tie_breaker);
 }
 
-fn commonality_bit_for_values(values: &[i32], commonality: &Commonality, bit_position: usize, tie_breaker: i32) -> i32 {
+fn commonality_bit_for_values(
+    values: &[i32],
+    commonality: &Commonality,
+    bit_position: usize,
+    tie_breaker: i32,
+) -> i32 {
     match commonality {
         Commonality::LeastCommon => least_common_bit_for_values(values, bit_position, tie_breaker),
-        Commonality::MostCommon => most_common_bit_for_values(values, bit_position, tie_breaker)
+        Commonality::MostCommon => most_common_bit_for_values(values, bit_position, tie_breaker),
     }
 }
 
@@ -185,8 +192,7 @@ fn commands(stream: impl BufRead) -> impl Iterator<Item = String> {
 fn main() {
     let mut diagnosticator = BinaryDiagnostic::new();
     let mut bit_count: usize = 0;
-    for command in commands(stdin()
-    .lock()) {
+    for command in commands(stdin().lock()) {
         let command_length = command.len();
         if command_length > bit_count {
             bit_count = command_length;
@@ -200,14 +206,16 @@ fn main() {
     let co2: IntType = diagnosticator.co2_scrubber_rating();
 
     println!("Oxygen: {}", oxygen);
-    println!("CO2:   {}", co2); 
+    println!("CO2:   {}", co2);
     println!("Life support rating: {}", oxygen * co2);
 }
 
-
 #[cfg(test)]
 mod tests {
-    use super::{BitAt, most_common_bit_for_values, least_common_bit_for_values, Commonality, recursive_filter};
+    use super::{
+        least_common_bit_for_values, most_common_bit_for_values, recursive_filter, BitAt,
+        Commonality,
+    };
     #[test]
     fn bit_at_works() {
         let i: i32 = 0b11001100;
@@ -225,14 +233,7 @@ mod tests {
     #[test]
     fn most_common_bit_works() {
         let values: Vec<i32> = vec![
-            0b1100,
-            0b1101,
-            0b1101,
-            0b1101,
-            0b1101,
-            0b1100,
-            0b1100,
-            0b1011,
+            0b1100, 0b1101, 0b1101, 0b1101, 0b1101, 0b1100, 0b1100, 0b1011,
             //   ^ -> 1
         ];
 
@@ -244,13 +245,7 @@ mod tests {
     #[test]
     fn most_common_bit_tie_breaker() {
         let values: Vec<i32> = vec![
-            0b1100,
-            0b1101,
-            0b1101,
-            0b1101,
-            0b1101,
-            0b1100,
-            0b1100,
+            0b1100, 0b1101, 0b1101, 0b1101, 0b1101, 0b1100, 0b1100,
             0b1010,
             //   ^ -> tied! tie breaker is returned
         ];
@@ -260,18 +255,10 @@ mod tests {
         assert_eq!(result, 2);
     }
 
-
     #[test]
     fn least_common_bit_works() {
         let values: Vec<i32> = vec![
-            0b1100,
-            0b1101,
-            0b1101,
-            0b1101,
-            0b1101,
-            0b1100,
-            0b1100,
-            0b1011,
+            0b1100, 0b1101, 0b1101, 0b1101, 0b1101, 0b1100, 0b1100, 0b1011,
             //   ^ -> 0
         ];
 
@@ -283,13 +270,7 @@ mod tests {
     #[test]
     fn least_common_bit_tie_breaker() {
         let values: Vec<i32> = vec![
-            0b1100,
-            0b1101,
-            0b1101,
-            0b1101,
-            0b1101,
-            0b1100,
-            0b1100,
+            0b1100, 0b1101, 0b1101, 0b1101, 0b1101, 0b1100, 0b1100,
             0b1010,
             //   ^ -> tied! tie breaker is returned
         ];
@@ -302,10 +283,10 @@ mod tests {
     #[test]
     fn recursive_filter_most_common() {
         let values: Vec<i32> = vec![
-                     // Rounds:
-                     // 1  2  3
+            // Rounds:
+            // 1  2  3
             0b11111, // +
-            0b10000, // +  +  
+            0b10000, // +  +
             0b10101, // +  +  +  winner
             0b01100, // .
             0b01101, // .
@@ -315,12 +296,7 @@ mod tests {
         let tie_breaker = 1;
         let commonality = Commonality::MostCommon;
 
-        let result = recursive_filter(
-            &values,
-            start_bit,
-            &commonality,
-            tie_breaker,
-        );
+        let result = recursive_filter(&values, start_bit, &commonality, tie_breaker);
 
         assert_eq!(result, 0b10101)
     }
@@ -328,14 +304,14 @@ mod tests {
     #[test]
     fn recursive_filter_least_common() {
         let values: Vec<i32> = vec![
-                     // Rounds:
-                     // 1  2  3
+            // Rounds:
+            // 1  2  3
             0b10111, // .
             0b10111, // .
             0b10111, // .
-            0b10000, // .  
+            0b10000, // .
             0b00001, // +  +  +  winner
-            0b01100, // +  +  
+            0b01100, // +  +
             0b01101, // +
         ];
 
@@ -343,12 +319,7 @@ mod tests {
         let tie_breaker = 1;
         let commonality = Commonality::LeastCommon;
 
-        let result = recursive_filter(
-            &values,
-            start_bit,
-            &commonality,
-            tie_breaker,
-        );
+        let result = recursive_filter(&values, start_bit, &commonality, tie_breaker);
 
         assert_eq!(result, 0b00001);
     }

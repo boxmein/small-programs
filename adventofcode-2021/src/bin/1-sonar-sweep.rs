@@ -1,4 +1,3 @@
-
 //! --- Day 1: Sonar Sweep ---
 // You're minding your own business on a ship at sea when the overboard alarm goes off! You rush to see if you can help. Apparently, one of the Elves tripped and accidentally sent the sleigh keys flying into the ocean!
 // Before you know it, you're inside a submarine the Elves keep ready for situations like this. It's covered in Christmas lights (because of course it is), and it even has an experimental antenna that should be able to track the keys if you can boost its signal strength high enough; there's a little meter that indicates the antenna's signal strength by displaying 0-50 stars.
@@ -32,13 +31,12 @@
 // In this example, there are 7 measurements that are larger than the previous measurement.
 // How many measurements are larger than the previous measurement?
 
-use std::io::{stdin, BufRead};
 use itertools::Itertools;
+use std::io::{stdin, BufRead};
 
-fn iterate_over_windows(
-    reader: impl BufRead
-) -> impl Iterator<Item = (String, String)> {
-    let lines = reader.lines()
+fn iterate_over_windows(reader: impl BufRead) -> impl Iterator<Item = (String, String)> {
+    let lines = reader
+        .lines()
         .filter(|value| value.is_ok())
         .map(|value| value.unwrap());
     return lines.tuple_windows();
@@ -57,7 +55,7 @@ fn main() {
         let prev = prev.parse::<i32>().expect("Failed to parse as int");
         let next = next.parse::<i32>().expect("Failed to parse as int");
 
-        let action = if prev < next { 
+        let action = if prev < next {
             "increased"
         } else if prev > next {
             "decreased"

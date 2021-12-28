@@ -99,244 +99,247 @@
 
 // Find the completion string for each incomplete line, score the completion strings, and sort the scores. What is the middle score?
 
-
-use std::collections::{VecDeque};
+use std::collections::VecDeque;
 use std::io::{stdin, BufRead};
 
 #[derive(Debug, PartialEq, Eq)]
 enum ErrorScanStatus {
-  Correct,
-  Incomplete {
-    complete_by_adding: Vec<char>,
-  },
-  IllegalCharacter {
-    character: char,
-    position: usize,
-  },
+    Correct,
+    Incomplete { complete_by_adding: Vec<char> },
+    IllegalCharacter { character: char, position: usize },
 }
 
 fn score(c: &char) -> u32 {
-  match *c {
-    ')' => 3,
-    ']' => 57,
-    '}' => 1197,
-    '>' => 25137,
-    _ => 0
-  }
+    match *c {
+        ')' => 3,
+        ']' => 57,
+        '}' => 1197,
+        '>' => 25137,
+        _ => 0,
+    }
 }
 
 fn corresponding_character(c: &char) -> char {
-  match c {
-    ')' => '(',
-    ']' => '[',
-    '}' => '{',
-    '>' => '<',
-    _ => *c,
-  }
+    match c {
+        ')' => '(',
+        ']' => '[',
+        '}' => '{',
+        '>' => '<',
+        _ => *c,
+    }
 }
 
 fn autocompletion_for_character(c: &char) -> char {
     match c {
-    '(' => ')',
-    '[' => ']',
-    '{' => '}',
-    '<' => '>',
-    _ => *c,
-  }
+        '(' => ')',
+        '[' => ']',
+        '{' => '}',
+        '<' => '>',
+        _ => *c,
+    }
 }
 
 fn generate_autocompletion<'a>(parens: impl DoubleEndedIterator<Item = &'a char>) -> Vec<char> {
-  parens
-    .rev()
-    .map(autocompletion_for_character)
-    .collect::<Vec<char>>()
+    parens
+        .rev()
+        .map(autocompletion_for_character)
+        .collect::<Vec<char>>()
 }
 
 fn scan_for_errors(inp: impl Iterator<Item = char>) -> ErrorScanStatus {
-  let mut parens: VecDeque<char> = VecDeque::new();
-  for (i, chr) in inp.enumerate() {
-    if "({[<".contains(chr) {
-      parens.push_back(chr);
-    } else if ")}]>".contains(chr) {
-      let corr = corresponding_character(&chr);
-      let head = parens.back();
+    let mut parens: VecDeque<char> = VecDeque::new();
+    for (i, chr) in inp.enumerate() {
+        if "({[<".contains(chr) {
+            parens.push_back(chr);
+        } else if ")}]>".contains(chr) {
+            let corr = corresponding_character(&chr);
+            let head = parens.back();
 
-      if head.is_none() {
-        println!("tried to close with {} but stack is empty: {:?}",
-          chr,
-          parens
-        );
-        return ErrorScanStatus::IllegalCharacter {
-          character: chr,
-          position: i,
-        };
-      }
+            if head.is_none() {
+                println!(
+                    "tried to close with {} but stack is empty: {:?}",
+                    chr, parens
+                );
+                return ErrorScanStatus::IllegalCharacter {
+                    character: chr,
+                    position: i,
+                };
+            }
 
-      let head = head.unwrap();
+            let head = head.unwrap();
 
-      if *head != corr {
-        println!("Expected {}, but found {} ({}) instead on position {}",
-          head,
-          corr,
-          chr,
-          i
-        );
-        return ErrorScanStatus::IllegalCharacter {
-          character: chr,
-          position: i,
-        };
-      }
+            if *head != corr {
+                println!(
+                    "Expected {}, but found {} ({}) instead on position {}",
+                    head, corr, chr, i
+                );
+                return ErrorScanStatus::IllegalCharacter {
+                    character: chr,
+                    position: i,
+                };
+            }
 
-      parens.pop_back();
+            parens.pop_back();
+        }
     }
-  }
 
-  if parens.len() > 0 {
-    println!("some opening parens still left: {:?}", parens);
-    ErrorScanStatus::Incomplete {
-      complete_by_adding: generate_autocompletion(parens.iter()),
+    if parens.len() > 0 {
+        println!("some opening parens still left: {:?}", parens);
+        ErrorScanStatus::Incomplete {
+            complete_by_adding: generate_autocompletion(parens.iter()),
+        }
+    } else {
+        ErrorScanStatus::Correct
     }
-  } else {
-    ErrorScanStatus::Correct
-  }
-
 }
 
 fn score_completion_character(c: &char) -> usize {
-  match c {
-    ')' => 1,
-    ']' => 2,
-    '}' => 3,
-    '>' => 4,
-    _ => 0
-  }
+    match c {
+        ')' => 1,
+        ']' => 2,
+        '}' => 3,
+        '>' => 4,
+        _ => 0,
+    }
 }
 
 fn score_completion(completions: &[char]) -> usize {
-  let mut score = 0;
-  for ch in completions {
-    score *= 5;
-    score += score_completion_character(&ch);
-  }
-  score
+    let mut score = 0;
+    for ch in completions {
+        score *= 5;
+        score += score_completion_character(&ch);
+    }
+    score
 }
 
 fn main() {
-  let errors = stdin()
-    .lock()
-    .lines()
-    .filter(|value| value.is_ok())
-    .map(|value| value.expect("stdin failure"))
-    .map(|value| scan_for_errors(value.chars()))
-    .collect::<Vec<ErrorScanStatus>>();
+    let errors = stdin()
+        .lock()
+        .lines()
+        .filter(|value| value.is_ok())
+        .map(|value| value.expect("stdin failure"))
+        .map(|value| scan_for_errors(value.chars()))
+        .collect::<Vec<ErrorScanStatus>>();
 
-  println!("{} errors", errors.len());
+    println!("{} errors", errors.len());
 
-  // Part 1
-  let part_1 = errors.iter().filter(|status| {
-    match status {
-      ErrorScanStatus::IllegalCharacter { .. } => true,
-      _ => false,
-    }
-  });
-
-  let mut score_1 = 0;
-  for error in part_1 {
-    match error {
-      ErrorScanStatus::IllegalCharacter { character, .. } => {
-        score_1 = score(character);
-      },
-      _ => {}
-    }
-  }
-
-  println!("part 1: {}", score_1);
-
-  // Part 2
-  let mut part_2 = errors.iter()
-    .filter(|status| {
-      match status {
-        ErrorScanStatus::Incomplete { .. } => true,
+    // Part 1
+    let part_1 = errors.iter().filter(|status| match status {
+        ErrorScanStatus::IllegalCharacter { .. } => true,
         _ => false,
-      }
-    })
-    .map(|error| {
-      match error {
-        ErrorScanStatus::Incomplete { complete_by_adding } => {
-          score_completion(&complete_by_adding[..])
-        },
-        _ => panic!("what?")
-      }
-    })
-    .collect::<Vec<usize>>();
+    });
 
-  part_2.sort();
+    let mut score_1 = 0;
+    for error in part_1 {
+        match error {
+            ErrorScanStatus::IllegalCharacter { character, .. } => {
+                score_1 = score(character);
+            }
+            _ => {}
+        }
+    }
 
-  let score_2 = part_2[part_2.len() / 2usize];
+    println!("part 1: {}", score_1);
 
-  println!("part 2: {}", score_2);
+    // Part 2
+    let mut part_2 = errors
+        .iter()
+        .filter(|status| match status {
+            ErrorScanStatus::Incomplete { .. } => true,
+            _ => false,
+        })
+        .map(|error| match error {
+            ErrorScanStatus::Incomplete { complete_by_adding } => {
+                score_completion(&complete_by_adding[..])
+            }
+            _ => panic!("what?"),
+        })
+        .collect::<Vec<usize>>();
+
+    part_2.sort();
+
+    let score_2 = part_2[part_2.len() / 2usize];
+
+    println!("part 2: {}", score_2);
 }
 
 #[cfg(test)]
 mod tests {
-  use super::*;
+    use super::*;
 
-  macro_rules! should_return {
-    ($s:expr, $r:expr) => {
-      assert_eq!(
-        scan_for_errors(
-          $s.chars()
-        ),
-        $r,
-      );
+    macro_rules! should_return {
+        ($s:expr, $r:expr) => {
+            assert_eq!(scan_for_errors($s.chars()), $r,);
+        };
     }
-  }
 
-  #[test]
-  fn scan_for_errors_tests() {
-    should_return!("()", ErrorScanStatus::Correct);
-    should_return!("())", ErrorScanStatus::IllegalCharacter {
-      character: ')',
-      position: 2
-    });
+    #[test]
+    fn scan_for_errors_tests() {
+        should_return!("()", ErrorScanStatus::Correct);
+        should_return!(
+            "())",
+            ErrorScanStatus::IllegalCharacter {
+                character: ')',
+                position: 2
+            }
+        );
 
-    should_return!(r#"{([(<{}[<>[]}>{[]{[(<()>"#, ErrorScanStatus::IllegalCharacter {
-      character: '}',
-      position: 12,
-    });
-    should_return!(r#"[[<[([]))<([[{}[[()]]]"#, ErrorScanStatus::IllegalCharacter {
-      character: ')',
-      position: 8,
-    });
-    should_return!(r#"[{[{({}]{}}([{[{{{}}([]"#, ErrorScanStatus::IllegalCharacter {
-      character: ']',
-      position: 7,
-    });
-    should_return!(r#"[<(<(<(<{}))><([]([]()"#, ErrorScanStatus::IllegalCharacter {
-      character: ')',
-      position: 10,
-    });
-    should_return!(r#"<{([([[(<>()){}]>(<<{{"#, ErrorScanStatus::IllegalCharacter {
-      character: '>',
-      position: 16,
-    });
-  }
+        should_return!(
+            r#"{([(<{}[<>[]}>{[]{[(<()>"#,
+            ErrorScanStatus::IllegalCharacter {
+                character: '}',
+                position: 12,
+            }
+        );
+        should_return!(
+            r#"[[<[([]))<([[{}[[()]]]"#,
+            ErrorScanStatus::IllegalCharacter {
+                character: ')',
+                position: 8,
+            }
+        );
+        should_return!(
+            r#"[{[{({}]{}}([{[{{{}}([]"#,
+            ErrorScanStatus::IllegalCharacter {
+                character: ']',
+                position: 7,
+            }
+        );
+        should_return!(
+            r#"[<(<(<(<{}))><([]([]()"#,
+            ErrorScanStatus::IllegalCharacter {
+                character: ')',
+                position: 10,
+            }
+        );
+        should_return!(
+            r#"<{([([[(<>()){}]>(<<{{"#,
+            ErrorScanStatus::IllegalCharacter {
+                character: '>',
+                position: 16,
+            }
+        );
+    }
 
-  #[test]
-  fn generate_autocompletion_tests() {
-    assert_eq!(
-      generate_autocompletion(
-        vec!['(','('].iter(),
-      ),
-      vec![')',')']
-    );
-  }
+    #[test]
+    fn generate_autocompletion_tests() {
+        assert_eq!(
+            generate_autocompletion(vec!['(', '('].iter(),),
+            vec![')', ')']
+        );
+    }
 
-  #[test]
-  fn score_part_2_test() {
-    assert_eq!(score_completion(&[']', ')', '}', '>']), 294);
-    assert_eq!(score_completion(&['}', '}', ']', ']', ')', '}', ')', ']']), 288957);
-    assert_eq!(score_completion(&[')', '}', '>', ']', '}', ')']), 5566);
-    assert_eq!(score_completion(&['}', '}', '>', '}', '>', ')', ')', ')', ')']), 1480781);
-  }
+    #[test]
+    fn score_part_2_test() {
+        assert_eq!(score_completion(&[']', ')', '}', '>']), 294);
+        assert_eq!(
+            score_completion(&['}', '}', ']', ']', ')', '}', ')', ']']),
+            288957
+        );
+        assert_eq!(score_completion(&[')', '}', '>', ']', '}', ')']), 5566);
+        assert_eq!(
+            score_completion(&['}', '}', '>', '}', '>', ')', ')', ')', ')']),
+            1480781
+        );
+    }
 }
