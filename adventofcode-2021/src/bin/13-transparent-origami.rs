@@ -146,7 +146,7 @@ struct Paper {
 impl Paper {
   pub fn new_with_size(width: usize, height: usize) -> Self {
     Self {
-      points: Array2::zeros((width, height))
+      points: Array2::zeros((height, width))
     }
   }
 
@@ -160,25 +160,84 @@ impl Paper {
     self.points[[y, x]] = PAPER_DOT;
   }
 
-  pub fn fold(&mut self, fold: FoldInstruction) {
+  fn get(&self, x: usize, y: usize) -> u8 {
+    self.points[[y, x]]
+  }
+
+  pub fn count_visible(&self) -> u64 {
+    let mut value = 0;
+    for point in self.points.iter() {
+      if *point == PAPER_DOT {
+        value += 1;
+      }
+    }
+    value
+  }
+
+  pub fn fold(&mut self, fold: &FoldInstruction) {
+    match fold {
+      FoldInstruction::FoldX(x_line) => {
+        self.fold_x(*x_line as usize);
+        // now resize the paper
+        self.points = self.points.slice(s![
+          0..,
+          0..(*x_line as usize)
+        ]).to_owned();
+      },
+      FoldInstruction::FoldY(y_line) => {
+        self.fold_y(*y_line as usize);
+        self.points = self.points.slice(s![
+          0..(*y_line as usize),
+          0..
+        ]).to_owned();
+      }
+    }
+  }
+
+  fn fold_x(&mut self, x_line: usize) {
+    for y in 0usize..self.points.shape()[0] {
+      for x in (x_line+1usize)..self.points.shape()[1] {
+        let value = self.get(x, y);
+        if value == PAPER_EMPTY {
+          continue;
+        }
+        let new_x = mirror_coordinate(x, x_line);
+        
+        self.fill(new_x, y);
+      }
+    }
+  }
+
+  fn fold_y(&mut self, y_line: usize) {
+    for y in (y_line+1usize)..self.points.shape()[0] {
+      for x in 0usize..self.points.shape()[1] {
+        let value = self.get(x, y);
+        if value == PAPER_EMPTY {
+          continue;
+        }
+        let new_y = mirror_coordinate(y, y_line);
+        
+        self.fill(x, new_y);
+      }
+    }
   }
 }
 
 
 impl fmt::Display for Paper {
   fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-    // write the header
-    write!(f, "   y  x")?;
-    for x in 0..self.points.shape()[1] {
-      write!(f, "{:>2} ", x)?;
-    }
-    write!(f, "\n\n")?;
-
     // write the cols
     for (y, row) in self.points.outer_iter().enumerate() {
       write!(f, "{:>4}   ", y)?;
-      for (x, col) in row.outer_iter().enumerate() {
-        write!(f, "{:>2} ", col)?;
+      for col in row.outer_iter() {
+        let inner = col.into_scalar();
+        if *inner == 0u8 {
+          write!(f, ".")?;
+        } else if *inner == 1u8 {
+          write!(f, "#")?;
+        } else {
+          write!(f, "?")?;
+        }
       }
       write!(f, "\n")?;
     }
@@ -191,7 +250,7 @@ impl fmt::Display for Paper {
 
 
 
-fn mirror_coordinate(coord: u64, mirroring_line: u64) -> u64 {
+fn mirror_coordinate(coord: usize, mirroring_line: usize) -> usize {
   if coord > mirroring_line {
     mirroring_line - (coord - mirroring_line) 
   } else if coord < mirroring_line {
@@ -250,9 +309,37 @@ mod tests {
   }
 
   #[test]
-  fn creating_works() {
-    let mut paper = Paper::new_with_size(10, 10);
-    paper.fill(1, 2);
+  fn example_fill_and_fold() {
+    let mut paper = Paper::new_with_size(12, 15);
+
+    paper.fill(6,10);
+    paper.fill(0,14);
+    paper.fill(9,10);
+    paper.fill(0,3);
+    paper.fill(10,4);
+    paper.fill(4,11);
+    paper.fill(6,0);
+    paper.fill(6,12);
+    paper.fill(4,1);
+    paper.fill(0,13);
+    paper.fill(10,12);
+    paper.fill(3,4);
+    paper.fill(3,0);
+    paper.fill(8,4);
+    paper.fill(1,10);
+    paper.fill(2,14);
+    paper.fill(8,10);
+    paper.fill(9,0);
+
+    println!("{}", paper);
+
+    paper.fold(&FoldInstruction::FoldY(7));
+
+    println!("{}", paper);
+
+    assert_eq!(paper.count_visible(), 17);
+
+    paper.fold(&FoldInstruction::FoldX(5));
 
     println!("{}", paper);
   }
