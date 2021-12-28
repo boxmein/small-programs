@@ -109,7 +109,20 @@
 
 // How many dots are visible after completing just the first fold instruction on your transparent paper?
 
-use ndarray::Array;
+#[macro_use]
+extern crate ndarray;
+
+use std::fmt;
+use ndarray::prelude::*;
+
+
+
+type PaperMarking = u8;
+const PAPER_EMPTY: PaperMarking = 0;
+const PAPER_DOT: PaperMarking = 1;
+
+
+
 
 struct Point { x: u64, y: u64 }
 enum FoldInstruction {
@@ -117,20 +130,66 @@ enum FoldInstruction {
   FoldY(u64),
 }
 
+
+
 struct ChallengeInput {
   points: Vec<Point>,
   folds: Vec<FoldInstruction>,
 }
 
+
+
 struct Paper {
-  points: Array,
+  points: Array2<PaperMarking>,
 }
 
 impl Paper {
-  pub fn new_with_size() -> Self {
+  pub fn new_with_size(width: usize, height: usize) -> Self {
+    Self {
+      points: Array2::zeros((width, height))
+    }
+  }
 
+  pub fn from_slice(slice: ArrayView<PaperMarking, Ix2>) -> Self {
+    Self {
+      points: slice.to_owned()
+    }
+  }
+  
+  pub fn fill(&mut self, x: usize, y: usize) {
+    self.points[[y, x]] = PAPER_DOT;
+  }
+
+  pub fn fold(&mut self, fold: FoldInstruction) {
   }
 }
+
+
+impl fmt::Display for Paper {
+  fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+    // write the header
+    write!(f, "   y  x")?;
+    for x in 0..self.points.shape()[1] {
+      write!(f, "{:>2} ", x)?;
+    }
+    write!(f, "\n\n")?;
+
+    // write the cols
+    for (y, row) in self.points.outer_iter().enumerate() {
+      write!(f, "{:>4}   ", y)?;
+      for (x, col) in row.outer_iter().enumerate() {
+        write!(f, "{:>2} ", col)?;
+      }
+      write!(f, "\n")?;
+    }
+    Ok(())
+  }
+}
+
+
+
+
+
 
 fn mirror_coordinate(coord: u64, mirroring_line: u64) -> u64 {
   if coord > mirroring_line {
@@ -141,6 +200,7 @@ fn mirror_coordinate(coord: u64, mirroring_line: u64) -> u64 {
     panic!("they said coord == mirroring_line cannot exist");
   }
 }
+
 
 #[cfg(test)]
 mod tests {
@@ -187,5 +247,13 @@ mod tests {
         mirror_coordinate(10, 5),
         0
       );
+  }
+
+  #[test]
+  fn creating_works() {
+    let mut paper = Paper::new_with_size(10, 10);
+    paper.fill(1, 2);
+
+    println!("{}", paper);
   }
 }
