@@ -94,15 +94,15 @@ fn recursive_filter(
     commonality: &Commonality,
     tie_breaker: i32,
 ) -> i32 {
-    if values.len() == 0 {
+    if values.is_empty() {
         panic!("did not find it!");
     }
     if values.len() == 1 {
         return values[0];
     }
 
-    assert!(tie_breaker >= 0 && tie_breaker <= 1);
-    assert!(start_bit <= INT_SIZE - 1);
+    assert!((0..=1).contains(&tie_breaker));
+    assert!(start_bit < INT_SIZE);
 
     let common = commonality_bit_for_values(values, commonality, start_bit, tie_breaker);
 
@@ -124,7 +124,7 @@ fn recursive_filter(
 
     assert!(start_bit > 0);
 
-    return recursive_filter(&new_values, start_bit - 1, commonality, tie_breaker);
+    recursive_filter(&new_values, start_bit - 1, commonality, tie_breaker)
 }
 
 fn commonality_bit_for_values(
@@ -186,7 +186,6 @@ fn commands(stream: impl BufRead) -> impl Iterator<Item = String> {
         .lines()
         .filter(|value| value.is_ok())
         .map(|value| value.unwrap())
-        .map(|value| value)
 }
 
 fn main() {

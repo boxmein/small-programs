@@ -39,7 +39,7 @@ fn iterate_over_windows(reader: impl BufRead) -> impl Iterator<Item = (String, S
         .lines()
         .filter(|value| value.is_ok())
         .map(|value| value.unwrap());
-    return lines.tuple_windows();
+    lines.tuple_windows()
 }
 
 /// Usage:
@@ -49,7 +49,7 @@ fn main() {
     // of the puzzle.
     let mut increased_count = 0;
     for (prev, next) in iterate_over_windows(stdin().lock()) {
-        if prev == "" || next == "" {
+        if prev.is_empty() || next.is_empty() {
             return;
         }
         let prev = prev.parse::<i32>().expect("Failed to parse as int");

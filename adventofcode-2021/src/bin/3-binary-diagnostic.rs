@@ -106,7 +106,7 @@ impl BinaryDiagnostic {
     }
 
     fn most_common_for_bit(&self, bit_number: usize) -> IntType {
-        assert!(bit_number <= INT_SIZE - 1);
+        assert!(bit_number < INT_SIZE);
 
         if self.zero_counts[bit_number] == 0 && self.one_counts[bit_number] == 0 {
             return 0;
@@ -120,7 +120,7 @@ impl BinaryDiagnostic {
     }
 
     fn least_common_for_bit(&self, bit_number: usize) -> IntType {
-        assert!(bit_number <= INT_SIZE - 1);
+        assert!(bit_number < INT_SIZE);
 
         if self.one_counts[bit_number] == 0 {
             return 0;
@@ -178,9 +178,9 @@ impl IntBitBuilder {
         let mut val = self.0;
 
         if value == 1 {
-            val = val | (1 << position);
+            val |= (1 << position);
         } else {
-            val = val & !(1 << position);
+            val &= !(1 << position);
         }
 
         self.0 = val;
@@ -196,7 +196,6 @@ fn commands(stream: impl BufRead) -> impl Iterator<Item = String> {
         .lines()
         .filter(|value| value.is_ok())
         .map(|value| value.unwrap())
-        .map(|value| value)
 }
 
 fn main() {
