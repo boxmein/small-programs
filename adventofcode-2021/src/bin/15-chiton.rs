@@ -175,9 +175,8 @@ macro_rules! access_node {
     }
 }
 
-
+struct EdgeData(u64, bool);
 type NodeData = u64;
-type EdgeData = u64;
 
 
 
@@ -198,19 +197,20 @@ impl FromStr for Floor {
         let arr = value
             .split("\n")
             .filter(|x| x.len() > 0)
-            .map(|x| x.to_owned())
+            .map(|x| x.chars().map(|col| {
+                let weight: NodeData = col
+                        .to_digit(10)
+                        .unwrap()
+                        .try_into()
+                        .unwrap();
+            }).collect::<Vec<NodeData>>())
             .collect::<Vec<String>>();
 
         // Add vertices to graph
         let nodes: Vec<Vec<NodeIndex>> = 
             arr.iter().map(|row| {
                 row.chars().map(|col| {
-                    let weight: NodeData = col
-                        .to_digit(10)
-                        .unwrap()
-                        .try_into()
-                        .unwrap();
-                    f.locations.add_node(weight)
+                    f.locations.add_node(col)
                 }).collect::<Vec<NodeIndex>>()
             }).collect();
 
