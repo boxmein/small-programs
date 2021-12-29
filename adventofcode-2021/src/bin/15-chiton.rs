@@ -263,12 +263,13 @@ fn digit_array_to_graph(inp: &Array2<u64>) -> (
         }
     }
 
-    let max_x = inp.shape()[1];
-    let max_y = inp.shape()[0];
-    
+    let max_x = inp.shape()[1] - 1;
+    let max_y = inp.shape()[0] - 1;
+
     let start = *access_node!(nodes, 0, 0).unwrap();
     let end = *access_node!(nodes, max_x, max_y).unwrap();
 
+    
 
     (g, start, end)
 }
@@ -325,7 +326,6 @@ mod tests {
     use super::*;
     use petgraph::graph::EdgeIndex;
     #[test]
-    #[ignore]
     fn floor_parses() {
         let s = r#"123
 232
@@ -343,6 +343,34 @@ mod tests {
 
         // assuming edge 0 = ((0, 0) -> (1, 0))
         assert_eq!(floor.locations[EdgeIndex::new(0)], 2);
+    }
+
+    #[test]
+    fn example_works() {
+        let s = r#"1163751742
+1381373672
+2136511328
+3694931569
+7463417111
+1319128137
+1359912421
+3125421639
+1293138521
+2311944581"#;
+
+        let arr = digit_grid_to_ndarray(s);
+        let (g, start, end) = digit_array_to_graph(&arr);
+        if let Some((k, path)) = astar(
+            &g,
+            start,
+            |n| n == end,
+            |e| *e.weight(),
+            |_| 0
+        ) {
+            assert_eq!(k, 40);
+        } else {
+            panic!("received None from a*");
+        }
     }
 
     #[test]
@@ -366,14 +394,16 @@ mod tests {
     #[test]
     fn digit_array_to_graph_works() {
         let arr = arr2(&[
-            &[1, 2, 3],
-            &[2, 3, 2],
-            &[3, 2, 1]
+            [1u64, 2, 3],
+            [2, 3, 2],
+            [3, 2, 1]
         ]);
 
         let (g, start, end) = digit_array_to_graph(&arr);
 
         assert_eq!(g.node_count(), 9);
         assert_eq!(g.edge_count(), 24);
+        g[start];
+        g[end];
     }
 }
