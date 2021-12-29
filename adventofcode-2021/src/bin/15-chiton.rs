@@ -202,6 +202,70 @@ fn digit_grid_to_ndarray(s: &str) -> Array2<u64> {
     ), arr).expect("failed to create array")
 }
 
+fn copy_into(av: &mut ArrayViewMut2<u64>, data: &Array2<u64>) {
+    assert_eq!(av.shape(), data.shape(), "copy_into: array view shape {:?} does not equal data shape {:?}", av.shape(), data.shape());
+
+    for y in 0..av.shape()[0] {
+        for x in 0..av.shape()[1] {
+            av[[y, x]] = data[[y, x]];
+        }
+    }
+}
+
+fn repeat_ndarray(n: &Array2<u64>) -> Array2<u64> {
+    
+    let new_shape = n.shape().iter().map(|i| i * 5).collect::<Vec<usize>>();
+    
+    let height = n.shape()[0];
+    let width = n.shape()[1];
+
+    let mut shp: [usize; 2] = Default::default();
+    shp.copy_from_slice(&new_shape);
+
+    let mut arr = Array2::from_shape_fn(shp, |_| { 0 });
+
+    // Copies work like this:
+    // A is the original dataset,
+    // B is A where every item has 1 added to it,
+    // C is B where every item has 1 added to it,
+    // and so on.
+    // All items are in modulo 9 arithmetic + 1 (123456789123456789...) 
+    // A B C D E 
+    // B C D E F
+    // C D E F G 
+    // D E F G H
+    // E F G H I
+
+    for y in 0..5 {
+        for x in 0..5 {
+            // find the slice's positions: 
+            // +------+ 12345
+            // | 1234 | 04291
+            // +------+ 04219
+            // 40285473824290
+            let left_x = x * width;
+            let right_x = (x + 1) * width - 1;
+            let top_y = y * height;
+            let bottom_y = (y + 1) * height - 1;
+
+            // find the amount we need to add to the original block, to make it
+            // correct
+            let delta = (x + y) as u64;
+
+            // create the data block to copy from
+            let data_block = n + delta;
+
+            // perform copy from data block to mega ndarray
+            copy_into(&mut arr.slice_mut(s![
+                top_y..bottom_y + 1,
+                left_x..right_x + 1
+            ]), &data_block);
+        } 
+    }
+
+    arr
+}
+
 fn digit_array_to_graph(inp: &Array2<u64>) -> (
     DiGraph<NodeData, EdgeData>,
     NodeIndex, // start of traversal
@@ -291,6 +355,16 @@ impl FromStr for Floor {
     }
 }
 
+fn correct_weight(weight: u64) -> u64 {
+    if weight > 9 {
+        (weight - 1) % 9 + 1
+    } else if weight < 1 {
+        1
+    } else {
+        weight
+    }
+}
+
 
 fn main() {
     let mut s: String = String::default();
@@ -308,13 +382,11 @@ fn main() {
 
     let floor = s.parse::<Floor>().expect("failed to parse floor");
 
-    // println!("{:?}", floor);
-
     if let Some((k, path)) = astar(
         &floor.locations,
         floor.start,
         |n| n == floor.end,
-        |e| *e.weight(),
+        |e| correct_weight(*e.weight()),
         |_| 0
     ) {
         println!("lowest risk score: {}", k);
@@ -323,6 +395,8 @@ fn main() {
 
 #[cfg(test)]
 mod tests {
+    use ndarray::prelude::*;
+
     use super::*;
     use petgraph::graph::EdgeIndex;
     #[test]
@@ -405,5 +479,161 @@ mod tests {
         assert_eq!(g.edge_count(), 24);
         g[start];
         g[end];
+    }
+    
+    #[test]
+    fn repeat_ndarray_increases_size() {
+        let arr = arr2(&[
+                [1u64, 2, 3],
+                [2, 3, 2],
+                [3, 2, 1]
+        ]);
+
+        let shape = (
+            arr.shape()[0],
+            arr.shape()[1],
+        );
+
+        let arr = repeat_ndarray(&arr);
+
+        let shape2 = arr.shape();
+
+        assert_eq!(shape2, &[15, 15]);
+    }
+
+    #[test]
+    fn repeat_ndarray_has_original_contents() {
+        let arr = arr2(&[
+                [1u64, 2, 3],
+                [2, 3, 2],
+                [3, 2, 1]
+        ]);
+
+        let arr = repeat_ndarray(&arr);
+
+        assert_eq!(arr.slice(s![0..3, 0..3]), arr2(&[
+            [1, 2, 3],
+            [2, 3, 2],
+            [3, 2, 1]
+        ]));
+    }
+
+    #[test]
+    fn repeat_ndarray_has_correct_repeat_at_1_0() {
+        let arr = arr2(&[
+                [1u64, 2, 3],
+                [2, 3, 2],
+                [3, 2, 1]
+        ]);
+
+        let arr = repeat_ndarray(&arr);
+
+        assert_eq!(arr.slice(s![3..6, 0..3]), arr2(&[
+            [2, 3, 4],
+            [3, 4, 3],
+            [4, 3, 2]
+        ]));
+    }
+
+    #[test]
+    fn repeat_ndarray_has_correct_repeat_at_2_0() {
+        let arr = arr2(&[
+                [1u64, 2, 3],
+                [2, 3, 2],
+                [3, 2, 1]
+        ]);
+
+        let arr = repeat_ndarray(&arr);
+
+        assert_eq!(arr.slice(s![6..9, 0..3]), arr2(&[
+            [3, 4, 5],
+            [4, 5, 4],
+            [5, 4, 3]
+        ]));
+    }
+
+    #[test]
+    fn repeat_ndarray_has_correct_repeat_at_4_0() {
+        let arr = arr2(&[
+                [1u64, 2, 3],
+                [2, 3, 2],
+                [3, 2, 1]
+        ]);
+
+        let arr = repeat_ndarray(&arr);
+
+        assert_eq!(arr.slice(s![12..15, 0..3]), arr2(&[
+            [5, 6, 7],
+            [6, 7, 6],
+            [7, 6, 5]
+        ]));
+    }
+
+
+    #[test]
+    fn repeat_ndarray_has_correct_repeat_at_4_4() {
+        let arr = arr2(&[
+                [1u64, 2, 3],
+                [2, 3, 2],
+                [3, 2, 1]
+        ]);
+
+        let arr = repeat_ndarray(&arr);
+
+        assert_eq!(arr.slice(s![12..15, 12..15]), arr2(&[
+            [9, 10, 11],
+            [10, 11, 10],
+            [11, 10, 9]
+        ]));
+    }
+
+    #[test]
+    fn copy_into_works() {
+        let mut ar1 = arr2(&[
+                [0, 0, 1],
+                [0, 0, 2],
+                [5, 4, 3]
+        ]);
+
+        let ar2 = arr2(&[
+            [6, 7],
+            [8, 9]
+        ]);
+
+        copy_into(&mut ar1.slice_mut(s![
+            0..2,
+            0..2
+        ]), &ar2);
+
+        assert_eq!(ar1, arr2(&[
+            [6, 7, 1],
+            [8, 9, 2],
+            [5, 4, 3],
+        ]));
+    }
+
+    #[test]
+    fn weight_corrector_works() {
+        assert_eq!(correct_weight(1), 1);
+        assert_eq!(correct_weight(2), 2);
+        assert_eq!(correct_weight(3), 3);
+        assert_eq!(correct_weight(4), 4);
+        assert_eq!(correct_weight(5), 5);
+        assert_eq!(correct_weight(6), 6);
+        assert_eq!(correct_weight(7), 7);
+        assert_eq!(correct_weight(8), 8);
+        assert_eq!(correct_weight(9), 9);
+        assert_eq!(correct_weight(10), 1);
+        assert_eq!(correct_weight(11), 2);
+        assert_eq!(correct_weight(12), 3);
+        assert_eq!(correct_weight(13), 4);
+        assert_eq!(correct_weight(14), 5);
+        assert_eq!(correct_weight(15), 6);
+        assert_eq!(correct_weight(16), 7);
+        assert_eq!(correct_weight(17), 8);
+        assert_eq!(correct_weight(18), 9);
+        assert_eq!(correct_weight(19), 1);
+        assert_eq!(correct_weight(20), 2);
+        assert_eq!(correct_weight(21), 3);
     }
 }
