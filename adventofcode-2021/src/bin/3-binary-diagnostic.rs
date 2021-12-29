@@ -178,7 +178,7 @@ impl IntBitBuilder {
         let mut val = self.0;
 
         if value == 1 {
-            val |= (1 << position);
+            val |= 1 << position;
         } else {
             val &= !(1 << position);
         }

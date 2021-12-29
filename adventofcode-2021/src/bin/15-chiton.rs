@@ -161,21 +161,12 @@
 
 
 use std::io::{stdin, BufRead};
-use std::collections::HashMap;
 use std::str::FromStr;
-use petgraph::graph::{NodeIndex, EdgeIndex, DiGraph};
-use petgraph::data::FromElements;
-use petgraph::visit::NodeRef;
+use petgraph::graph::{NodeIndex, DiGraph};
 use petgraph::algo::astar;
-use std::cmp::max;
+use ndarray::prelude::*;
 
-macro_rules! access_node {
-    ($n:expr, $x:expr, $y:expr) => {
-        $n.get($y).map(|row| row.get($x)).flatten()
-    }
-}
-
-struct EdgeData(u64, bool);
+type EdgeData = u64;
 type NodeData = u64;
 
 
@@ -187,85 +178,113 @@ struct Floor {
     pub end: NodeIndex,
 }
 
+fn digit_grid_to_ndarray(s: &str) -> Array2<u64> {
+    let arr = s
+        .split("\n")
+        .filter(|x| x.len() > 0)
+        .map(|x| x.chars().map(|col| {
+            col
+                    .to_digit(10)
+                    .unwrap()
+                    .try_into()
+                    .unwrap()
+        }).collect::<Vec<NodeData>>())
+        .collect::<Vec<Vec<NodeData>>>();
 
+    let height =  arr.len();
+    let width = arr[0].len();
+
+    let arr = arr.into_iter().flatten().collect::<Vec<NodeData>>();
+
+    Array2::from_shape_vec((
+        height,
+        width,
+    ), arr).expect("failed to create array")
+}
+
+fn digit_array_to_graph(inp: &Array2<u64>) -> (
+    DiGraph<NodeData, EdgeData>,
+    NodeIndex, // start of traversal
+    NodeIndex // end of traversal
+ ) {
+    macro_rules! access_node {
+        ($n:expr, $x:expr, $y:expr) => {
+            $n.get($y).map(|row| row.get($x)).flatten()
+        }
+    }
+
+    let mut g: DiGraph<NodeData, EdgeData> = DiGraph::new();
+
+    let nodes: Vec<Vec<NodeIndex>> = 
+        inp.outer_iter().map(|row| {
+            row.outer_iter().map(|col| {
+                g.add_node(*col.into_scalar())
+            }).collect::<Vec<NodeIndex>>()
+        }).collect();
+
+    // Add edges to graph
+    for (y, row) in nodes.iter().enumerate() {
+        for (x, _) in row.iter().enumerate() {
+            let center = nodes[y][x];
+            
+            if x > 0 {
+                if let Some(left) = access_node!(nodes, x-1, y) {
+                    g.add_edge(
+                        center,
+                        *left,
+                        g[*left],
+                    );
+                }
+            }
+
+            if let Some(right) = access_node!(nodes, x+1, y) {
+                g.add_edge(
+                    center,
+                    *right,
+                    g[*right],
+                );
+            }
+            if y > 0 {
+                if let Some(up) = access_node!(nodes, x, y-1) {
+                    g.add_edge(
+                        center,
+                        *up,
+                        g[*up],
+                    );
+                }
+            }
+            if let Some(down) = access_node!(nodes, x, y+1) {
+                g.add_edge(
+                    center,
+                    *down,
+                    g[*down],
+                );
+            }
+        }
+    }
+
+    let max_x = inp.shape()[1];
+    let max_y = inp.shape()[0];
+    
+    let start = *access_node!(nodes, 0, 0).unwrap();
+    let end = *access_node!(nodes, max_x, max_y).unwrap();
+
+
+    (g, start, end)
+}
 
 impl FromStr for Floor {
     type Err = &'static str;
     fn from_str(value: &str) -> Result<Self, Self::Err> {
         let mut f = Floor::default();
 
-        let arr = value
-            .split("\n")
-            .filter(|x| x.len() > 0)
-            .map(|x| x.chars().map(|col| {
-                let weight: NodeData = col
-                        .to_digit(10)
-                        .unwrap()
-                        .try_into()
-                        .unwrap();
-            }).collect::<Vec<NodeData>>())
-            .collect::<Vec<String>>();
+        let digits = digit_grid_to_ndarray(value);
+        
+        let (graph, start, end) = digit_array_to_graph(&digits);
 
-        // Add vertices to graph
-        let nodes: Vec<Vec<NodeIndex>> = 
-            arr.iter().map(|row| {
-                row.chars().map(|col| {
-                    f.locations.add_node(col)
-                }).collect::<Vec<NodeIndex>>()
-            }).collect();
-
-        let mut max_x = 0;
-        let mut max_y = 0;
-
-        // Add edges to graph
-        for (y, row) in nodes.iter().enumerate() {
-            if y > max_y {
-                max_y = y;
-            }
-            for (x, _) in row.iter().enumerate() {
-                if x > max_x {
-                    max_x = x;
-                }
-                let center = nodes[y][x];
-                
-                if x > 0 {
-                    if let Some(left) = access_node!(nodes, x-1, y) {
-                        f.locations.add_edge(
-                            center,
-                            *left,
-                            f.locations[*left],
-                        );
-                    }
-                }
-
-                if let Some(right) = access_node!(nodes, x+1, y) {
-                    f.locations.add_edge(
-                        center,
-                        *right,
-                        f.locations[*right],
-                    );
-                }
-                if y > 0 {
-                    if let Some(up) = access_node!(nodes, x, y-1) {
-                        f.locations.add_edge(
-                            center,
-                            *up,
-                            f.locations[*up],
-                        );
-                    }
-                }
-                if let Some(down) = access_node!(nodes, x, y+1) {
-                    f.locations.add_edge(
-                        center,
-                        *down,
-                        f.locations[*down],
-                    );
-                }
-            }
-        }
-
-        f.start = *access_node!(nodes, 0, 0).unwrap();
-        f.end = *access_node!(nodes, max_x, max_y).unwrap();
+        f.locations = graph;
+        f.start = start;
+        f.end = end;
 
         Ok(f)
     }
@@ -304,7 +323,9 @@ fn main() {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use petgraph::graph::EdgeIndex;
     #[test]
+    #[ignore]
     fn floor_parses() {
         let s = r#"123
 232
@@ -322,5 +343,37 @@ mod tests {
 
         // assuming edge 0 = ((0, 0) -> (1, 0))
         assert_eq!(floor.locations[EdgeIndex::new(0)], 2);
+    }
+
+    #[test]
+    fn digit_grid_to_ndarray_works() {
+        let s = r#"123
+232
+321"#;
+        let arr = digit_grid_to_ndarray(s);
+
+        assert_eq!(arr[[0, 0]], 1);
+        assert_eq!(arr[[0, 1]], 2);
+        assert_eq!(arr[[0, 2]], 3);
+        assert_eq!(arr[[1, 0]], 2);
+        assert_eq!(arr[[1, 1]], 3);
+        assert_eq!(arr[[1, 2]], 2);
+        assert_eq!(arr[[2, 0]], 3);
+        assert_eq!(arr[[2, 1]], 2);
+        assert_eq!(arr[[2, 2]], 1);
+    }
+
+    #[test]
+    fn digit_array_to_graph_works() {
+        let arr = arr2(&[
+            &[1, 2, 3],
+            &[2, 3, 2],
+            &[3, 2, 1]
+        ]);
+
+        let (g, start, end) = digit_array_to_graph(&arr);
+
+        assert_eq!(g.node_count(), 9);
+        assert_eq!(g.edge_count(), 24);
     }
 }
