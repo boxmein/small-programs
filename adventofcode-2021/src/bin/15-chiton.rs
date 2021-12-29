@@ -38,17 +38,32 @@
 use std::io::{stdin, BufRead};
 use std::collections::HashMap;
 use std::str::FromStr;
-use petgraph::graph::{NodeIndex, UnGraph};
+use petgraph::graph::{NodeIndex, EdgeIndex, DiGraph};
 use petgraph::data::FromElements;
+use petgraph::visit::NodeRef;
+use petgraph::algo::astar;
 use std::cmp::max;
 
-type NodeData = u8;
-type EdgeData = u8;
+macro_rules! access_node {
+    ($n:expr, $x:expr, $y:expr) => {
+        $n.get($y).map(|row| row.get($x)).flatten()
+    }
+}
+
+
+type NodeData = u64;
+type EdgeData = u64;
+
+
 
 #[derive(Default, Debug)]
 struct Floor {
-    pub locations: UnGraph<NodeData, EdgeData>,
+    pub locations: DiGraph<NodeData, EdgeData>,
+    pub start: NodeIndex,
+    pub end: NodeIndex,
 }
+
+
 
 impl FromStr for Floor {
     type Err = &'static str;
@@ -65,7 +80,7 @@ impl FromStr for Floor {
         let nodes: Vec<Vec<NodeIndex>> = 
             arr.iter().map(|row| {
                 row.chars().map(|col| {
-                    let weight: u8 = col
+                    let weight: NodeData = col
                         .to_digit(10)
                         .unwrap()
                         .try_into()
@@ -74,52 +89,62 @@ impl FromStr for Floor {
                 }).collect::<Vec<NodeIndex>>()
             }).collect();
 
+        let mut max_x = 0;
+        let mut max_y = 0;
+
         // Add edges to graph
         for (y, row) in nodes.iter().enumerate() {
+            if y > max_y {
+                max_y = y;
+            }
             for (x, _) in row.iter().enumerate() {
+                if x > max_x {
+                    max_x = x;
+                }
                 let center = nodes[y][x];
                 
                 if x > 0 {
-                    if let Some(left) = nodes.get(y).map(|row| row.get(x-1)).flatten() {
+                    if let Some(left) = access_node!(nodes, x-1, y) {
                         f.locations.add_edge(
                             center,
                             *left,
-                            0,
+                            f.locations[*left],
                         );
                     }
                 }
 
-                if let Some(right) = nodes.get(y).map(|row| row.get(x+1)).flatten() {
+                if let Some(right) = access_node!(nodes, x+1, y) {
                     f.locations.add_edge(
                         center,
                         *right,
-                        0,
+                        f.locations[*right],
                     );
                 }
                 if y > 0 {
-                    if let Some(up) = nodes.get(y - 1).map(|row| row.get(x)).flatten() {
+                    if let Some(up) = access_node!(nodes, x, y-1) {
                         f.locations.add_edge(
                             center,
                             *up,
-                            0,
+                            f.locations[*up],
                         );
                     }
                 }
-                if let Some(down) = nodes.get(y + 1).map(|row| row.get(x)).flatten() {
+                if let Some(down) = access_node!(nodes, x, y+1) {
                     f.locations.add_edge(
                         center,
                         *down,
-                        0,
+                        f.locations[*down],
                     );
                 }
             }
         }
 
+        f.start = *access_node!(nodes, 0, 0).unwrap();
+        f.end = *access_node!(nodes, max_x, max_y).unwrap();
+
         Ok(f)
     }
 }
-
-
 
 
 fn main() {
@@ -138,6 +163,39 @@ fn main() {
 
     let floor = s.parse::<Floor>().expect("failed to parse floor");
 
-    println!("{:?}", floor);
+    // println!("{:?}", floor);
 
+    if let Some((k, path)) = astar(
+        &floor.locations,
+        floor.start,
+        |n| n == floor.end,
+        |e| *e.weight(),
+        |_| 0
+    ) {
+        println!("lowest risk score: {}", k);
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn floor_parses() {
+        let s = r#"123
+232
+321"#;
+
+        let floor = s.parse::<Floor>().unwrap();
+
+        assert_eq!(floor.locations.node_count(), 9);
+        assert_eq!(floor.locations.edge_count(), 24);
+
+        // assuming node 0 = (0, 0); node 1 = (1, 0); node 2 = (2, 0)
+        assert_eq!(floor.locations[NodeIndex::new(0)], 1);
+        assert_eq!(floor.locations[NodeIndex::new(1)], 2);
+        assert_eq!(floor.locations[NodeIndex::new(2)], 3);
+
+        // assuming edge 0 = ((0, 0) -> (1, 0))
+        assert_eq!(floor.locations[EdgeIndex::new(0)], 2);
+    }
 }
