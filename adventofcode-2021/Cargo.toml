@@ -12,3 +12,6 @@ typed-arena = "2.0.1"
 crossterm = "0.22.1"
 ndarray = "0.15.4"
 petgraph = "0.6.0"
+# kaitai_struct = { git = "https://github.com/kaitai-io/kaitai_struct_rust_runtime" }
+nom = "7.1.0"
+hex = "0.4.3"
