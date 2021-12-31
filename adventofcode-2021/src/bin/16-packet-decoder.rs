@@ -94,6 +94,33 @@
 
 // To begin, get your puzzle input.
 
+// --- Part Two ---
+
+// Now that you have the structure of your transmission decoded, you can calculate the value of the expression it represents.
+
+// Literal values (type ID 4) represent a single number as described above. The remaining type IDs are more interesting:
+
+// Packets with type ID 0 are sum packets - their value is the sum of the values of their sub-packets. If they only have a single sub-packet, their value is the value of the sub-packet.
+// Packets with type ID 1 are product packets - their value is the result of multiplying together the values of their sub-packets. If they only have a single sub-packet, their value is the value of the sub-packet.
+// Packets with type ID 2 are minimum packets - their value is the minimum of the values of their sub-packets.
+// Packets with type ID 3 are maximum packets - their value is the maximum of the values of their sub-packets.
+// Packets with type ID 5 are greater than packets - their value is 1 if the value of the first sub-packet is greater than the value of the second sub-packet; otherwise, their value is 0. These packets always have exactly two sub-packets.
+// Packets with type ID 6 are less than packets - their value is 1 if the value of the first sub-packet is less than the value of the second sub-packet; otherwise, their value is 0. These packets always have exactly two sub-packets.
+// Packets with type ID 7 are equal to packets - their value is 1 if the value of the first sub-packet is equal to the value of the second sub-packet; otherwise, their value is 0. These packets always have exactly two sub-packets.
+// Using these rules, you can now work out the value of the outermost packet in your BITS transmission.
+
+// For example:
+
+// C200B40A82 finds the sum of 1 and 2, resulting in the value 3.
+// 04005AC33890 finds the product of 6 and 9, resulting in the value 54.
+// 880086C3E88112 finds the minimum of 7, 8, and 9, resulting in the value 7.
+// CE00C43D881120 finds the maximum of 7, 8, and 9, resulting in the value 9.
+// D8005AC2A8F0 produces 1, because 5 is less than 15.
+// F600BC2D8F produces 0, because 5 is not greater than 15.
+// 9C005AC2F8F0 produces 0, because 5 is not equal to 15.
+// 9C0141080250320F1802104A08 produces 1, because 1 + 3 = 2 * 2.
+// What do you get if you evaluate the expression represented by your hexadecimal-encoded BITS transmission?
+
 use nom::{
   IResult,
   bits,
@@ -106,7 +133,37 @@ use std::io::{stdin, BufRead};
 
 #[derive(Debug)]
 enum Packet {
-  Operator {
+  Sum {
+    version: u8,
+    type_id: u8,
+    subpackets: Vec<Packet>,
+  },
+  Product {
+    version: u8,
+    type_id: u8,
+    subpackets: Vec<Packet>,
+  },
+  Min {
+    version: u8,
+    type_id: u8,
+    subpackets: Vec<Packet>,
+  },
+  Max {
+    version: u8,
+    type_id: u8,
+    subpackets: Vec<Packet>,
+  },
+  Gt {
+    version: u8,
+    type_id: u8,
+    subpackets: Vec<Packet>,
+  },
+  Lt {
+    version: u8,
+    type_id: u8,
+    subpackets: Vec<Packet>,
+  },
+  Eq {
     version: u8,
     type_id: u8,
     subpackets: Vec<Packet>,
@@ -115,6 +172,104 @@ enum Packet {
     version: u8,
     type_id: u8,
     binary_parts: Vec<u8>,
+  }
+}
+
+impl Packet {
+  pub fn get_version(&self) -> u64 {
+    match self {
+      Packet::Sum { version, .. } => *version as u64,
+      Packet::Product { version, .. } => *version as u64,
+      Packet::Min { version, .. } => *version as u64,
+      Packet::Max { version, .. } => *version as u64,
+      Packet::Gt { version, .. } => *version as u64,
+      Packet::Lt { version, .. } => *version as u64,
+      Packet::Eq { version, .. } => *version as u64,
+      Packet::Literal { version, .. } => *version as u64
+    }
+  }
+  pub fn get_subpackets(&self) -> Option<&[Packet]> {
+    match self {
+      Packet::Sum { subpackets, .. } => Some(subpackets),
+      Packet::Product { subpackets, .. } => Some(subpackets),
+      Packet::Min { subpackets, .. } => Some(subpackets),
+      Packet::Max { subpackets, .. } => Some(subpackets),
+      Packet::Gt { subpackets, .. } => Some(subpackets),
+      Packet::Lt { subpackets, .. } => Some(subpackets),
+      Packet::Eq { subpackets, .. } => Some(subpackets),
+      Packet::Literal { .. } => None
+    }
+  }
+  pub fn get_value(&self) -> u64 {
+    match self {
+      Packet::Literal { binary_parts, .. } => {
+        assert!(binary_parts.len() > 0);
+        assert!(binary_parts.len() <= 16); // 16 x 4 bits == 64 bits
+
+        let mut value: u64 = 0;
+        let max_offset = binary_parts.len() - 1;
+        for i in 0..binary_parts.len() {
+          let offset = (max_offset - i) * 4;
+          let part_bit: u64 = binary_parts[i] as u64 & 0xf; // slice to a nibble
+          value |= part_bit << offset;
+        }
+
+        value
+      },
+      Packet::Sum { subpackets, .. } => {
+        assert!(subpackets.len() > 0);
+        subpackets.iter()
+          .map(|pkt| pkt.get_value())
+          .reduce(|acc, i| acc + i)
+          .expect("Packet had 0 subpackets")
+      },
+      Packet::Product { subpackets, .. } => {
+        assert!(subpackets.len() > 0);
+        subpackets.iter()
+          .map(|pkt| pkt.get_value())
+          .reduce(|acc, i| acc * i)
+          .expect("Packet had 0 subpackets")
+      },
+      Packet::Max { subpackets, .. } => {
+        assert!(subpackets.len() > 0);
+        subpackets.iter()
+          .map(|pkt| pkt.get_value())
+          .max()
+          .expect("Packet had 0 subpackets")
+      },
+      Packet::Min { subpackets, .. } => {
+        assert!(subpackets.len() > 0);
+        subpackets.iter()
+          .map(|pkt| pkt.get_value())
+          .min()
+          .expect("Packet had 0 subpackets")
+      },
+      Packet::Gt { subpackets, .. } => {
+        assert_eq!(subpackets.len(), 2);
+        if subpackets[0].get_value() > subpackets[1].get_value() {
+          1
+        } else {
+          0
+        }
+      },
+      Packet::Lt { subpackets, .. } => {
+        assert_eq!(subpackets.len(), 2);
+
+        if subpackets[0].get_value() < subpackets[1].get_value() {
+          1
+        } else {
+          0
+        }
+      },
+      Packet::Eq { subpackets, .. } => {
+        assert_eq!(subpackets.len(), 2);
+        if subpackets[0].get_value() == subpackets[1].get_value() {
+          1
+        } else {
+          0
+        }
+      },
+    }
   }
 }
 
@@ -248,29 +403,57 @@ fn extract_packet((data, cursor): (&[u8], usize)) -> IResult<(&[u8], usize), Pac
     }))
   } else {
     let ((data, cursor), subpackets) = extract_operator_packet_contents((data, cursor))?;
-    Ok(((data, cursor), Packet::Operator {
-      version,
-      type_id,
-      subpackets,
-    }))
+    let pkt = match type_id {
+      0 => Packet::Sum {
+        version,
+        type_id,
+        subpackets,
+      },
+      1 => Packet::Product {
+        version,
+        type_id,
+        subpackets,
+      },
+      2 => Packet::Min {
+        version,
+        type_id,
+        subpackets,
+      },
+      3 => Packet::Max {
+        version,
+        type_id,
+        subpackets,
+      },
+      5 => Packet::Gt {
+        version,
+        type_id,
+        subpackets,
+      },
+      6 => Packet::Lt {
+        version,
+        type_id,
+        subpackets,
+      },
+      7 => Packet::Eq {
+        version,
+        type_id,
+        subpackets,
+      },
+      _ => panic!("Invalid type ID!")
+    };
+    Ok(((data, cursor), pkt))
   }
 }
 
 fn sum_version_numbers(existing_sum: u64, packet: &Packet) -> u64 {
   let mut sum = existing_sum;
 
-  sum += match packet {
-    Packet::Operator { version, .. } => *version as u64,
-    Packet::Literal { version, .. } => *version as u64
-  };
+  sum += packet.get_version();
 
-  match packet {
-    Packet::Operator { ref subpackets, .. } => {
-      for subpk in subpackets {
-        sum = sum_version_numbers(sum, subpk);
-      }
+  if let Some(subpackets) = packet.get_subpackets() {
+    for subpk in subpackets {
+      sum = sum_version_numbers(sum, subpk);
     }
-    _ => {}
   }
 
   sum
@@ -328,7 +511,7 @@ mod tests {
     let ((data, cursor), pkt) = extract_packet((&data, 0)).unwrap();
 
     match pkt {
-      Packet::Operator { version, type_id, subpackets } => {    
+      Packet::Lt { version, type_id, subpackets } => {    
         assert_eq!(version, 1);
         assert_eq!(type_id, 6);
         assert_eq!(subpackets.len(), 2);
@@ -357,7 +540,7 @@ mod tests {
 
     println!("{:?}", pkt);
     match pkt {
-      Packet::Operator { version, type_id, subpackets } => {    
+      Packet::Max { version, type_id, subpackets } => {    
         assert_eq!(version, 7);
         assert_eq!(type_id, 3);
         assert_eq!(subpackets.len(), 3);
@@ -410,4 +593,45 @@ mod tests {
     let sum = sum_version_numbers(0, &pkt);
     assert_eq!(sum, 31);
   }
+
+  #[test]
+  fn literal_packing_works() {
+    let packet = Packet::Literal {
+      version: 1,
+      type_id: 4,
+      binary_parts: vec![
+        0b1_0000,
+        0b1_0001,
+        0b1_1111,
+        0b1_1110,
+        0b1_0011,
+        0b0_1010,
+      ],
+    };
+
+    assert_eq!(
+      packet.get_value(),
+      0b0000_0001_1111_1110_0011_1010,
+    )
+  }
+
+  macro_rules! part_2_test {
+    ($name:ident, $hex:expr, $value:expr) => {
+      #[test]
+      fn $name() {
+        let data = from_hex($hex).unwrap();
+        let ((data, cursor), pkt) = extract_packet((&data, 0)).unwrap();
+        assert_eq!(pkt.get_value(), $value);
+      }
+    }
+  }
+
+  part_2_test!(sum_works, "C200B40A82", 3);
+  part_2_test!(product_works, "04005AC33890", 54);
+  part_2_test!(min_works, "880086C3E88112", 7);
+  part_2_test!(max_works, "CE00C43D881120", 9);
+  part_2_test!(lt_works, "D8005AC2A8F0", 1);
+  part_2_test!(gt_works, "F600BC2D8F", 0);
+  part_2_test!(eq_works, "9C005AC2F8F0", 0);
+  part_2_test!(nested_works, "9C0141080250320F1802104A08", 1);
 }
