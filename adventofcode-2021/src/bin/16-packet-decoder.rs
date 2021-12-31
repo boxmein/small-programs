@@ -102,25 +102,136 @@ use nom::{
 
 use hex::decode;
 
-struct Packet {
-  pub version: u8,
-  pub type_id: u8,
-  pub binary_parts: Vec<u8>,
-  pub subpackets: Vec<Packet>,
+use std::io::{stdin, BufRead};
+
+#[derive(Debug)]
+enum Packet {
+  Operator {
+    version: u8,
+    type_id: u8,
+    subpackets: Vec<Packet>,
+  },
+  Literal {
+    version: u8,
+    type_id: u8,
+    binary_parts: Vec<u8>,
+  }
 }
 
 fn from_hex(input: &str) -> Result<Vec<u8>, hex::FromHexError> {
   decode(input)
 }
 
+fn extract_literal_packet_contents(
+  (data, cursor): (&[u8], usize),
+) -> IResult<(&[u8], usize), Vec<u8>, Error<(&[u8], usize)>> {
+  let extract_binary_part = bits::complete::take::<_, u8, _, _>(5usize);
+
+  let mut data = data;
+  let mut cursor = cursor;
+  let mut binparts: Vec<u8> = vec![];
+
+  loop {
+    let ((d, cur), binary_part) = extract_binary_part((data, cursor))?;
+    println!("binary part: {:>05b}", binary_part);
+    data = d;
+    cursor = cur;
+    binparts.push(binary_part);
+
+    let is_end = (binary_part >> 4 & 1) == 0;
+    if is_end {
+      println!("end of binary parts");
+      break;
+    }
+  }
+
+  Ok(((data, cursor), binparts))
+}
+
+fn extract_subpackets_lti_1(
+  (data, cursor): (&[u8], usize)
+) -> IResult<(&[u8], usize), Vec<Packet>, Error<(&[u8], usize)>> {
+  let extract_length_1 = bits::complete::take::<_, u16, _, _>(11usize);
+
+  let mut subpackets: Vec<Packet> = vec![];
+  let ((data, cursor), length) = extract_length_1((data, cursor))?;
+
+  println!("length data 1: {} ({:>011b})", length, length);
+  let mut data = data;
+  let mut cursor = cursor;
+  for i in 0..length {
+    println!("recursively parsing packet {}", i);
+    let ((d, cur), pkt) = extract_packet((data, cursor))?;
+    data = d;
+    cursor = cur;
+
+    subpackets.push(pkt);
+  }
+  
+  Ok(((data, cursor), subpackets))
+}
+
+fn extract_subpackets_lti_0(
+  (data, cursor): (&[u8], usize)
+) -> IResult<(&[u8], usize), Vec<Packet>, Error<(&[u8], usize)>> {
+  let mut subpackets: Vec<Packet> = vec![];
+  let extract_length_0 = bits::complete::take::<_, u16, _, _>(15usize);
+
+  let ((data, cursor), length) = extract_length_0((data, cursor))?;
+  
+  let unconsumed: usize = data.len() * 8 - cursor;
+  let target_unconsumed: usize = unconsumed - length as usize;
+  
+  println!("length data 0: {} ({:>08b})", length, length);
+  println!("{} bits unconsumed, until target {}", unconsumed, target_unconsumed);
+  
+  let mut cursor = cursor;
+  let mut data = data;
+  loop {
+    println!("parsing a packet to eat more bits");
+  
+    let ((d, cur), pkt) = extract_packet((data, cursor))?;
+    data = d;
+    cursor = cur;
+  
+    subpackets.push(pkt);
+  
+    let new_unconsumed = data.len() * 8 - cursor;
+    
+    println!("{} bits unconsumed", new_unconsumed);
+    
+    if new_unconsumed <= target_unconsumed {
+      println!("reached target, breaking");
+      break;
+    }
+  }
+
+  Ok(((data, cursor), subpackets))
+}
+
+fn extract_operator_packet_contents(
+  (data, cursor): (&[u8], usize),
+) -> IResult<(&[u8], usize), Vec<Packet>, Error<(&[u8], usize)>> {
+  let extract_length_type_id = bits::complete::take::<_, u8, _, _>(1usize);
+
+  let ((data, cursor), lti) = extract_length_type_id((data, cursor))?;
+  println!("length type identifier: {}", lti);
+  let ((data, cursor), subpackets) = 
+    if lti == 1 {
+      extract_subpackets_lti_1((data, cursor))?
+    } else if lti == 0 {
+      extract_subpackets_lti_0((data, cursor))?
+    } else {
+      panic!("unsupported length type ID");
+    };
+
+  Ok(((data, cursor), subpackets))
+}
+
 fn extract_packet((data, cursor): (&[u8], usize)) -> IResult<(&[u8], usize), Packet, Error<(&[u8], usize)>> {
   let extract_version = bits::complete::take::<_, u8, _, _>(3usize);
   let extract_type_id = bits::complete::take::<_, u8, _, _>(3usize);
-  let extract_binary_part = bits::complete::take::<_, u8, _, _>(5usize);
-  let extract_length_type_id = bits::complete::take::<_, u8, _, _>(1usize);
-  let extract_length_0 = bits::complete::take::<_, u16, _, _>(15usize);
-  let extract_length_1 = bits::complete::take::<_, u8, _, _>(11usize);
-  
+
   println!("received {} bytes ({} bits with cursor)", data.len(), data.len() * 8 - cursor);
 
   let ((data, cursor), version) = extract_version((data, cursor))?;
@@ -129,84 +240,56 @@ fn extract_packet((data, cursor): (&[u8], usize)) -> IResult<(&[u8], usize), Pac
   println!("type_id: {}", type_id);
 
   if type_id == 4 {
-    let mut cursor = cursor;
-    let mut binparts: Vec<u8> = vec![];
-    loop {
-      let ((d, cur), binary_part) = extract_binary_part((data, cursor))?;
-      println!("binary part: {:>05b}", binary_part);
-      data = d;
-      cursor = cur;
-      binparts.push(binary_part);
-
-      let is_end = (binary_part >> 4 & 1) == 0;
-      if is_end {
-        println!("end of binary parts");
-        break;
-      }
-    }
-
-    Ok(((data, cursor), Packet {
+    let ((data, cursor), binary_parts) = extract_literal_packet_contents((data, cursor))?;
+    Ok(((data, cursor), Packet::Literal {
       version,
       type_id,
-      binary_parts: binparts,
-      subpackets: vec![],
+      binary_parts,
     }))
   } else {
-    let mut packet = Packet {
+    let ((data, cursor), subpackets) = extract_operator_packet_contents((data, cursor))?;
+    Ok(((data, cursor), Packet::Operator {
       version,
       type_id,
-      binary_parts: vec![],
-      subpackets: vec![],
-    };
-
-    let ((data, cursor), lti) = extract_length_type_id((data, cursor))?;
-    println!("length type identifier: {}", lti);
-    if lti == 1 {
-      let ((data, cursor), length) = extract_length_1((data, cursor))?;
-      println!("length data 1: {:b}", length);
-      let mut data = data;
-      let mut cursor = cursor;
-      for i in 0..length {
-        println!("recursively parsing packet {}", i);
-        let ((d, cur), pkt) = extract_packet((data, cursor))?;
-        data = d;
-        cursor = cur;
-        packet.subpackets.push(pkt);
-      }
-    } else if lti == 0 {
-      let ((data, cursor), length) = extract_length_0((data, cursor))?;
-      println!("length data 0: {} ({:>08b})", length, length);
-      let unconsumed = data.len() * 8 - cursor;
-      let target_unconsumed = unconsumed - length as usize;
-      println!("{} bits unconsumed, until target {}", unconsumed, target_unconsumed);
-      let mut cursor = cursor;
-      let mut data = data;
-      loop {
-        println!("parsing a packet to eat more bits");
-        let ((d, cur), pkt) = extract_packet((data, cursor))?;
-        data = d;
-        cursor = cur;
-        packet.subpackets.push(pkt);
-        let new_unconsumed = data.len() * 8 - cursor;
-        
-        println!("{} bits unconsumed", new_unconsumed);
-        
-        if new_unconsumed <= target_unconsumed {
-          println!("reached target, breaking");
-          break;
-        }
-      }
-    } else {
-      panic!("unsupported length type ID");
-    }
-
-    Ok(((data, cursor), packet))
+      subpackets,
+    }))
   }
 }
 
+fn sum_version_numbers(existing_sum: u64, packet: &Packet) -> u64 {
+  let mut sum = existing_sum;
+
+  sum += match packet {
+    Packet::Operator { version, .. } => *version as u64,
+    Packet::Literal { version, .. } => *version as u64
+  };
+
+  match packet {
+    Packet::Operator { ref subpackets, .. } => {
+      for subpk in subpackets {
+        sum = sum_version_numbers(sum, subpk);
+      }
+    }
+    _ => {}
+  }
+
+  sum
+}
 
 fn main() {
+  let mut s: String = String::default();
+  for line in stdin()
+      .lock()
+      .lines()
+      .filter(|value| value.is_ok())
+      .map(|value| value.expect("stdin failure")) {
+      s += &line;
+  }
 
+  let data = from_hex(&s).expect("invalid hex");
+  let ((data, cursor), packet) = extract_packet((&data, 0)).expect("failed to parse input!");
+  let result = sum_version_numbers(0, &packet);
+  println!("Sum of all version numbers: {}", result);
 }
 
 #[cfg(test)]
@@ -226,24 +309,107 @@ mod tests {
     let data = from_hex("D2FE28").unwrap();
     let ((data, cursor), pkt) = extract_packet((&data, 0)).unwrap();
 
-    assert_eq!(pkt.version, 6);
-    assert_eq!(pkt.type_id, 4);
-    assert_eq!(pkt.subpackets.len(), 0);
-    assert_eq!(pkt.binary_parts.len(), 3);
-    assert_eq!(pkt.binary_parts[0], 0b10111);
-    assert_eq!(pkt.binary_parts[1], 0b11110);
-    assert_eq!(pkt.binary_parts[2], 0b00101);
+    match pkt {
+      Packet::Literal { version, type_id, binary_parts } => {
+        assert_eq!(version, 6);
+        assert_eq!(type_id, 4);
+        assert_eq!(binary_parts.len(), 3);
+        assert_eq!(binary_parts[0], 0b10111);
+        assert_eq!(binary_parts[1], 0b11110);
+        assert_eq!(binary_parts[2], 0b00101);
+      }
+      _ => panic!("Wrong packet type!")
+    }
   }
 
   #[test]
-  fn operator_packet_example_2_works() {
+  fn operator_packet_example_lti_0_works() {
     let data = from_hex("38006F45291200").unwrap();
     let ((data, cursor), pkt) = extract_packet((&data, 0)).unwrap();
 
-    assert_eq!(pkt.version, 1);
-    assert_eq!(pkt.type_id, 6);
-    assert_eq!(pkt.subpackets.len(), 2);
-    assert_eq!(pkt.subpackets[0].type_id, 4);
-    assert_eq!(pkt.subpackets[1].type_id, 4);
+    match pkt {
+      Packet::Operator { version, type_id, subpackets } => {    
+        assert_eq!(version, 1);
+        assert_eq!(type_id, 6);
+        assert_eq!(subpackets.len(), 2);
+
+        match subpackets[0] {
+          Packet::Literal { type_id, .. } => {
+            assert_eq!(type_id, 4);
+          }
+          _ => panic!("Wrong packet type!")
+        }
+        match subpackets[1] {
+          Packet::Literal { type_id, .. } => {
+            assert_eq!(type_id, 4);
+          }
+          _ => panic!("Wrong packet type!")
+        }
+      }
+      _ => panic!("Wrong packet type!")
+    }
+  }
+
+  #[test]
+  fn operator_packet_example_lti_1_works() {
+    let data = from_hex("EE00D40C823060").unwrap();
+    let ((data, cursor), pkt) = extract_packet((&data, 0)).unwrap();
+
+    println!("{:?}", pkt);
+    match pkt {
+      Packet::Operator { version, type_id, subpackets } => {    
+        assert_eq!(version, 7);
+        assert_eq!(type_id, 3);
+        assert_eq!(subpackets.len(), 3);
+
+        match subpackets[0] {
+          Packet::Literal { type_id, .. } => {
+            assert_eq!(type_id, 4);
+          }
+          _ => panic!("Wrong packet type!")
+        }
+        match subpackets[1] {
+          Packet::Literal { type_id, .. } => {
+            assert_eq!(type_id, 4);
+          }
+          _ => panic!("Wrong packet type!")
+        }
+      }
+      _ => panic!("Wrong packet type!")
+    }
+  }
+
+  #[test]
+  fn part_1_example_1_works() {
+    let data = from_hex("8A004A801A8002F478").unwrap();
+    let ((data, cursor), pkt) = extract_packet((&data, 0)).unwrap();
+    let sum = sum_version_numbers(0, &pkt);
+    assert_eq!(sum, 16);
+  }
+
+  #[test]
+  fn part_1_example_2_works() {
+    let data = from_hex("620080001611562C8802118E34").unwrap();
+    let ((data, cursor), pkt) = extract_packet((&data, 0)).unwrap();
+    let sum = sum_version_numbers(0, &pkt);
+    assert_eq!(sum, 12);
+  }
+
+  #[test]
+  #[ignore]
+  fn part_1_example_3_works() {
+    let data = from_hex("C0015000016115A2E0802F182340").unwrap();
+    let ((data, cursor), pkt) = extract_packet((&data, 0)).unwrap();
+    let sum = sum_version_numbers(0, &pkt);
+    assert_eq!(sum, 23);
+  }
+
+  #[test]
+  #[ignore]
+  fn part_1_example_4_works() {
+    let data = from_hex("A0016C880162017C3686B18A3D4780").unwrap();
+    let ((data, cursor), pkt) = extract_packet((&data, 0)).unwrap();
+    let sum = sum_version_numbers(0, &pkt);
+    assert_eq!(sum, 31);
   }
 }
