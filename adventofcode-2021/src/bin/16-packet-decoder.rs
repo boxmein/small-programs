@@ -120,6 +120,8 @@ fn extract_packet((data, cursor): (&[u8], usize)) -> IResult<(&[u8], usize), Pac
   let extract_length_type_id = bits::complete::take::<_, u8, _, _>(1usize);
   let extract_length_0 = bits::complete::take::<_, u16, _, _>(15usize);
   let extract_length_1 = bits::complete::take::<_, u8, _, _>(11usize);
+  
+  println!("received {} bytes ({} bits with cursor)", data.len(), data.len() * 8 - cursor);
 
   let ((data, cursor), version) = extract_version((data, cursor))?;
   println!("version: {}", version);
@@ -173,18 +175,19 @@ fn extract_packet((data, cursor): (&[u8], usize)) -> IResult<(&[u8], usize), Pac
       }
     } else if lti == 0 {
       let ((data, cursor), length) = extract_length_0((data, cursor))?;
-      println!("length data 0: {:b}", length);
-      let unconsumed = data.len() * 8;
+      println!("length data 0: {} ({:>08b})", length, length);
+      let unconsumed = data.len() * 8 - cursor;
       let target_unconsumed = unconsumed - length as usize;
       println!("{} bits unconsumed, until target {}", unconsumed, target_unconsumed);
       let mut cursor = cursor;
       let mut data = data;
       loop {
+        println!("parsing a packet to eat more bits");
         let ((d, cur), pkt) = extract_packet((data, cursor))?;
         data = d;
         cursor = cur;
         packet.subpackets.push(pkt);
-        let new_unconsumed = data.len() * 8 + 8 - cursor;
+        let new_unconsumed = data.len() * 8 - cursor;
         
         println!("{} bits unconsumed", new_unconsumed);
         
