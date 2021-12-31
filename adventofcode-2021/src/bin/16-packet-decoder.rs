@@ -473,6 +473,8 @@ fn main() {
   let ((data, cursor), packet) = extract_packet((&data, 0)).expect("failed to parse input!");
   let result = sum_version_numbers(0, &packet);
   println!("Sum of all version numbers: {}", result);
+  let evaluated = packet.get_value();
+  println!("Evaluated expression: {}", evaluated);
 }
 
 #[cfg(test)]
