@@ -396,7 +396,6 @@ mod tests {
   }
 
   #[test]
-  #[ignore]
   fn part_1_example_3_works() {
     let data = from_hex("C0015000016115A2E0802F182340").unwrap();
     let ((data, cursor), pkt) = extract_packet((&data, 0)).unwrap();
@@ -405,7 +404,6 @@ mod tests {
   }
 
   #[test]
-  #[ignore]
   fn part_1_example_4_works() {
     let data = from_hex("A0016C880162017C3686B18A3D4780").unwrap();
     let ((data, cursor), pkt) = extract_packet((&data, 0)).unwrap();
