@@ -166,19 +166,33 @@
 use std::ops::Add;
 use std::rc::Rc;
 use std::fmt;
+use std::io::{stdin, BufRead};
+use std::cell::RefCell;
 
 use nom::{
   IResult,
 };
 
+type Shareable<T> = Rc<RefCell<T>>;
+
+macro_rules! new {
+  ($e:expr) => {
+    Rc::new(RefCell::new($e))
+  }
+}
+
+
 #[derive(Clone, Debug, PartialEq, Eq)]
 enum SnailfishNumber {
-  Pair(Rc<SnailfishNumber>, Rc<SnailfishNumber>),
+  Pair(Shareable<SnailfishNumber>, Shareable<SnailfishNumber>),
   Literal(i64),
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
-struct SnailfishTop(Rc<SnailfishNumber>, Rc<SnailfishNumber>);
+struct SnailfishTop(
+  Shareable<SnailfishNumber>,
+  Shareable<SnailfishNumber>,
+);
 
 fn split(num: i64) -> SnailfishNumber {
   let div: i64 = num / 2;
@@ -187,33 +201,37 @@ fn split(num: i64) -> SnailfishNumber {
   let left_value = div;
   let right_value = div + modulo;
   SnailfishNumber::Pair(
-    Rc::new(SnailfishNumber::Literal(left_value)),
-    Rc::new(SnailfishNumber::Literal(right_value)),
+    new!(SnailfishNumber::Literal(left_value)),
+    new!(SnailfishNumber::Literal(right_value)),
   )
 }
 
 
 fn sequence_recursive(
-  acc: &mut Vec<Rc<SnailfishNumber>>,
-  current: Rc<SnailfishNumber>,
+  acc: &mut Vec<Shareable<SnailfishNumber>>,
+  current: Shareable<SnailfishNumber>,
 ) {
-  match &*current {
-    SnailfishNumber::Pair(left, right) => {
-      sequence_recursive(acc, Rc::clone(left));
-      sequence_recursive(acc, Rc::clone(right));
-      return;
-    },
-    _ => {},
+  { 
+    let peekaboo = current.borrow();
+    match *peekaboo {
+      SnailfishNumber::Pair(ref left, ref right) => {
+        println!("202 taking clone of {:?}", left);
+        sequence_recursive(acc, Rc::clone(left));
+        println!("204 taking clone of {:?}", right);
+        sequence_recursive(acc, Rc::clone(right));
+        return;
+      },
+      _ => {},
+    }
   }
-
   acc.push(current);
 }
 
 
 fn find_number_to_the_left_of(
   num: &SnailfishTop,
-  center: Rc<SnailfishNumber>,
-) -> Option<Rc<SnailfishNumber>> {
+  center: Shareable<SnailfishNumber>,
+) -> Option<Shareable<SnailfishNumber>> {
   let seq = num.sequence();
 
   for (i, item) in seq.iter().enumerate() {
@@ -222,6 +240,8 @@ fn find_number_to_the_left_of(
         return None;
       } else {
         let r = &seq[i - 1];
+
+        println!("228 taking clone of r {}", r.borrow());
         return Some(Rc::clone(r));
       }
     }
@@ -232,8 +252,8 @@ fn find_number_to_the_left_of(
 
 fn find_number_to_the_right_of(
   num: &SnailfishTop,
-  center: Rc<SnailfishNumber>,
-) -> Option<Rc<SnailfishNumber>> {
+  center: Shareable<SnailfishNumber>,
+) -> Option<Shareable<SnailfishNumber>> {
   let seq = num.sequence();
 
   for (i, item) in seq.iter().enumerate() {
@@ -242,6 +262,7 @@ fn find_number_to_the_right_of(
         return None;
       } else {
         let r = &seq[i + 1];
+        println!("249 taking clone of r {}", r.borrow());
         return Some(Rc::clone(r));
       }
     }
@@ -251,7 +272,7 @@ fn find_number_to_the_right_of(
 }
 
 
-fn are_refs_equal(a: &Rc<SnailfishNumber>, b: &Rc<SnailfishNumber>) -> bool {
+fn are_refs_equal(a: &Shareable<SnailfishNumber>, b: &Shareable<SnailfishNumber>) -> bool {
   Rc::ptr_eq(a, b)
 }
 
@@ -283,21 +304,26 @@ impl SnailfishTop {
 
   pub fn attempt_split(&mut self) -> (Self, bool) {
     let new = self.clone();
+    println!("attempting split: {}", new);
     let seq = new.sequence();
 
     let mut split_performed = false;
 
-    for mut r in seq {
+    for r in seq {
+      println!("seeing if we can split {:?}", r);
+      println!("borrowing it mutably");
+      let mut r = r.borrow_mut();
+      println!("borrow success");
       match *r {
         SnailfishNumber::Literal(x) if x >= 10 => {
+          println!("found split location: {}", r);
           let new_split= split(x);
-          if let Some(m) = Rc::get_mut(&mut r) {
-            *m = new_split;
-          }
+          *r = new_split;
           split_performed = true;
         },
         _ => {}
       }
+      println!("releasing borrow on r {:?}", r);
     }
     (
       new,
@@ -305,17 +331,27 @@ impl SnailfishTop {
     )
   }
 
-  pub fn sequence(&self) -> Vec<Rc<SnailfishNumber>> {
-    let mut arr: Vec<Rc<SnailfishNumber>> = vec![];
+  pub fn sequence(&self) -> Vec<Shareable<SnailfishNumber>> {
+    let mut arr: Vec<Shareable<SnailfishNumber>> = vec![];
+    
+    println!("323 taking clone of {}", self.0.borrow());
     sequence_recursive(&mut arr, Rc::clone(&self.0));
+    println!("325 taking clone of {}", self.1.borrow());
     sequence_recursive(&mut arr, Rc::clone(&self.1));
 
     arr
   }
 
   pub fn magnitude(&self) -> i64 {
-    self.0.magnitude() * 3 + self.1.magnitude() * 2
+    (*self.0.borrow()).magnitude() * 3 + (*self.1.borrow()).magnitude() * 2
   }
+}
+
+
+impl fmt::Display for SnailfishTop {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+      write!(f, "[{},{}]", self.0.borrow(), self.1.borrow())
+    }
 }
 
 
@@ -330,10 +366,9 @@ fn parse_snailfish_literal(input: &str) -> IResult<&str, SnailfishNumber> {
   Ok((input, SnailfishNumber::Literal(num)))
 }
 
-fn parse_snailfish_number(data: &str) -> IResult<&str, SnailfishNumber> {
+fn parse_snailfish_number(input: &str) -> IResult<&str, SnailfishNumber> {
   use nom::character::complete::*;
   use nom::branch::alt;
-  let input: &str = &data;
   let (input, _) = char('[')(input)?;
   let (input, left) = alt((
     parse_snailfish_literal,
@@ -350,8 +385,8 @@ fn parse_snailfish_number(data: &str) -> IResult<&str, SnailfishNumber> {
     (
       input, 
       SnailfishNumber::Pair(
-        Rc::new(left),
-        Rc::new(right)
+        new!(left),
+        new!(right)
       )
     )
   )
@@ -364,7 +399,7 @@ impl SnailfishNumber {
   pub fn magnitude(&self) -> i64 {
     match self {
       SnailfishNumber::Pair(left, right) => {
-        left.magnitude() * 3 + right.magnitude() * 2
+        (*left.borrow()).magnitude() * 3 + (*right.borrow()).magnitude() * 2
       },
       SnailfishNumber::Literal(x) => *x,
     }
@@ -375,8 +410,8 @@ impl Add for SnailfishNumber {
   type Output = Self;
   fn add(self, other: Self) -> Self {
     SnailfishNumber::Pair(
-      Rc::new(self.clone()),
-      Rc::new(other),
+      new!(self.clone()),
+      new!(other),
     )
   }
 }
@@ -386,14 +421,33 @@ impl fmt::Display for SnailfishNumber {
         match self {
           &SnailfishNumber::Literal(x) => write!(f, "{}", x),
           &SnailfishNumber::Pair(ref left, ref right) => {
-            write!(f, "[{},{}]", left, right)
+            write!(f, "[{},{}]", *left.borrow(), *right.borrow())
           },
         }
     }
 }
 
 fn main() {
+  let value: SnailfishTop = stdin()
+    .lock()
+    .lines()
+    .filter(|value| value.is_ok())
+    .map(|value| value.expect("stdin failure"))
+    .map(|value| parse_snailfish_number(&value).unwrap().1)
+    .reduce(|a, b| a + b)
+    .map(|sn| {
+      match sn {
+        SnailfishNumber::Pair(left, right) => {
+          SnailfishTop(left, right)
+        }
+        _ => panic!("unexpected number: {}", sn),
+      }
+    })
+    .unwrap()
+    .reduce();
 
+  println!("sum: {}", value);
+  println!("magnitude: {}", value.magnitude());
 }
 
 #[cfg(test)]
@@ -404,29 +458,29 @@ mod tests {
     
     ( [ [$($a:tt)*], [$($b:tt)*] ] ) => {
       SnailfishNumber::Pair(
-        Rc::new(snail!( [ $($a)* ] )),
-        Rc::new(snail!( [ $($b)* ] )),
+        new!(snail!( [ $($a)* ] )),
+        new!(snail!( [ $($b)* ] )),
       )
     };
 
     ( [ $a: expr, [$($b:tt)*] ] ) => {
       SnailfishNumber::Pair(
-        Rc::new(SnailfishNumber::Literal($a)),
-        Rc::new(snail!( [ $($b)* ] )),
+        new!(SnailfishNumber::Literal($a)),
+        new!(snail!( [ $($b)* ] )),
       )
     };
 
     ( [ [$($a:tt)*], $b:expr ] ) => {
       SnailfishNumber::Pair(
-        Rc::new(SnailfishNumber::Literal($a)),
-        Rc::new(snail!( [ $($b)* ] )),
+        new!(snail!( [ $($a)* ] )),
+        new!(SnailfishNumber::Literal($b)),
       )
     };
     
     ( [$a:expr, $b:expr] ) => {
       SnailfishNumber::Pair(
-        Rc::new(SnailfishNumber::Literal($a)),
-        Rc::new(SnailfishNumber::Literal($b)),
+        new!(SnailfishNumber::Literal($a)),
+        new!(SnailfishNumber::Literal($b)),
       )
     };
     
@@ -437,21 +491,15 @@ mod tests {
 
   macro_rules! snail_top {
     ($a:expr, $b:expr) => {
-      SnailfishTop(Rc::new($a), Rc::new($b))
+      SnailfishTop(new!($a), new!($b))
     }
   }
 
   use super::*;
   #[test]
   fn represents_snailfish_number() {
-    let a = SnailfishNumber::Pair(
-      Rc::new(SnailfishNumber::Literal(1)),
-      Rc::new(SnailfishNumber::Literal(2)),
-    );
-    let _b = SnailfishNumber::Pair(
-      Rc::new(a),
-      Rc::new(SnailfishNumber::Literal(3)),
-    );
+    let _a = snail! [[ 1, 2 ]];
+    let _b =  snail! [[ [1, 2], 3 ]];
   }
 
   #[test]
@@ -459,10 +507,7 @@ mod tests {
     let inp = 12i64;
     let out = split(inp);
 
-    assert_eq!(out, SnailfishNumber::Pair(
-      Rc::new(SnailfishNumber::Literal(6)),
-      Rc::new(SnailfishNumber::Literal(6)),
-    ));
+    assert_eq!(out, snail! [[ 6, 6 ]]);
   }
 
   
@@ -471,41 +516,24 @@ mod tests {
     let inp = 13i64;
     let out = split(inp);
 
-    assert_eq!(out, SnailfishNumber::Pair(
-      Rc::new(SnailfishNumber::Literal(6)),
-      Rc::new(SnailfishNumber::Literal(7)),
-    ));
+    assert_eq!(out, snail! [[ 6, 7 ]]);
   }
 
   #[test]
   fn sequence_works() {
-    let inp = SnailfishTop(
-      Rc::new(SnailfishNumber::Literal(1)),
-      Rc::new(SnailfishNumber::Literal(2)),
-    );
+    let inp = snail_top! [ snail!(1), snail!(2) ];
     let out = inp.sequence();
 
-    assert_eq!(out, vec![
-      Rc::new(SnailfishNumber::Literal(1)),
-      Rc::new(SnailfishNumber::Literal(2)),
-    ]);
+    assert_eq!(*out[0].borrow(), snail!(1));
+    assert_eq!(*out[1].borrow(), snail!(2));
   }
 
   #[test]
   fn magnitude_works() {
-    let inp = SnailfishTop(
-      Rc::new(SnailfishNumber::Pair(
-        Rc::new(SnailfishNumber::Literal(1)),
-        Rc::new(SnailfishNumber::Literal(2)),
-      )),
-      Rc::new(SnailfishNumber::Pair(
-        Rc::new(SnailfishNumber::Pair(
-          Rc::new(SnailfishNumber::Literal(3)),
-          Rc::new(SnailfishNumber::Literal(4)),
-        )),
-        Rc::new(SnailfishNumber::Literal(5)),
-      )),
-    );
+    let inp = snail_top! [
+      snail! [[ 1, 2 ]],
+      snail! [[ [3, 4], 5 ]]
+    ];
 
     assert_eq!(inp.magnitude(), 143);
   }
@@ -521,7 +549,32 @@ mod tests {
     assert_eq!(
       new_data,
       snail_top! [
-        snail! { [6i64, 5] }, snail!(3)
+        snail! { [5, 6] }, snail!(3)
+      ],
+    )
+  }
+
+  #[test]
+  fn splits_snailfish_numeral_correctly_2() {
+    let mut inp = snail_top! [
+      snail! [[ 4, 22 ]],
+      snail! [[ [1, 12], 3 ]]  
+    ];
+
+    let (new_data, split_performed) = inp.attempt_split();
+    
+    assert_eq!(split_performed, true);
+
+    assert_eq!(
+      new_data,
+      snail_top! [
+        snail! [[
+          4, [ 11, 11 ]
+        ]],
+        snail! [[
+          [1, [ 6, 6 ]],
+          3
+        ]]
       ],
     )
   }
@@ -529,40 +582,12 @@ mod tests {
   #[test]
   fn parser_works() {
     let inp = "[[2,[[0,8],[3,4]]],[[[6,7],1],[7,[1,6]]]]";
-    let (rest, out) = parse_snailfish_number(inp).unwrap();
+    let (_rest, out) = parse_snailfish_number(inp).unwrap();
     assert_eq!(
       out,
-      SnailfishNumber::Pair(
-        Rc::new(SnailfishNumber::Pair(
-          Rc::new(SnailfishNumber::Literal(2)),
-          Rc::new(SnailfishNumber::Pair(
-            Rc::new(SnailfishNumber::Pair(
-              Rc::new(SnailfishNumber::Literal(0)),
-              Rc::new(SnailfishNumber::Literal(8)),
-            )),
-            Rc::new(SnailfishNumber::Pair(
-              Rc::new(SnailfishNumber::Literal(3)),
-              Rc::new(SnailfishNumber::Literal(4)),
-            )),
-          )),
-        )),
-        Rc::new(SnailfishNumber::Pair(
-          Rc::new(SnailfishNumber::Pair(
-            Rc::new(SnailfishNumber::Pair(
-              Rc::new(SnailfishNumber::Literal(6)),
-              Rc::new(SnailfishNumber::Literal(7)),
-            )),
-            Rc::new(SnailfishNumber::Literal(1)),
-          )),
-          Rc::new(SnailfishNumber::Pair(
-            Rc::new(SnailfishNumber::Literal(7)),
-            Rc::new(SnailfishNumber::Pair(
-              Rc::new(SnailfishNumber::Literal(1)),
-              Rc::new(SnailfishNumber::Literal(6)),
-            )),
-          )),
-        )),
-      ),
+      snail! [
+        [[2,[[0,8],[3,4]]],[[[6,7],1],[7,[1,6]]]]
+      ]
     );
   }
 
