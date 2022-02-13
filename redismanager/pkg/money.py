@@ -1,5 +1,8 @@
+import logging
+
 from .repository import Repository
 
+log = logging.getLogger("money_service")
 
 class MoneyService:
   def __init__(self, db: Repository): 

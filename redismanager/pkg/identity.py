@@ -1,4 +1,8 @@
+import logging
+
 from .repository import Repository
+
+log = logging.getLogger("identity_service")
 
 #
 # Login system

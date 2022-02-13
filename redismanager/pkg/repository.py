@@ -1,4 +1,9 @@
+import logging
+
 import redis
+
+log = logging.getLogger("repository")
+
 
 #
 # Repository / Storage Layer

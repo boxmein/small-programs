@@ -1,6 +1,9 @@
 import json
+import logging
 
 import docker
+
+log = logging.getLogger("container_manager")
 
 #
 # Infrastructure (Docker)
@@ -76,8 +79,10 @@ class ContainerManager:
       container = client.containers.get(container_name)
       container.stop()
       container.remove()
+      return True
     except docker.errors.NotFound:
       print(f"no container called f{container_name}")
+      return False
 
   def create_admin_redis_if_needed(self):
     return self.create_redis_if_not_exists(
