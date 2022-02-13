@@ -1,0 +1,14 @@
+{
+  "folders": [
+    { "path": "." }
+  ],
+  "settings": {
+    "rust-client.rustupPath": "~/.asdf/shims/rustup",
+  },
+  "extensions": {
+    "recommendations": [
+      "rust-lang.rust",
+      "nyxiative.rust-and-friends"
+    ]
+  }
+}
