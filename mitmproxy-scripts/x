@@ -1,0 +1,13 @@
+#!/bin/zsh
+set -e
+TOOL_NAME=./x
+PROJECT_NAME=mitmproxy-scripts
+. ../ideal-build-tool/buildtool
+
+check pip3 show mitmproxy
+tool python3 3
+
+# build with make
+start with python3 ./mitmfaultinjection.py
+
+woot
