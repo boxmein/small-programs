@@ -1,0 +1,14 @@
+#!/bin/zsh
+set -e
+TOOL_NAME=./x
+PROJECT_NAME=euler
+. ../ideal-build-tool/buildtool
+
+tool runhaskell
+
+build with ghc -o ./5 ./5.hs
+start with runhaskell ./5.hs
+
+cleanup 5 5.hi 5.o 
+
+woot
