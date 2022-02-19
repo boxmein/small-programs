@@ -1,0 +1,15 @@
+#!/bin/zsh
+set -e
+TOOL_NAME=./x
+PROJECT_NAME=foreach
+. ../ideal-build-tool/buildtool
+
+tool make
+tool clang++
+
+build with make
+start with ./foreach
+
+cleanup foreach.o foreach
+
+woot
