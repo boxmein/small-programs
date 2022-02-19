@@ -1,0 +1,15 @@
+#!/bin/zsh
+set -e
+TOOL_NAME=./x
+PROJECT_NAME=small-programs
+. ../ideal-build-tool/buildtool
+
+build with cargo build
+
+run tests with cargo test
+run linter with cargo clippy
+run formatter with cargo fmt
+run dependency updates with cargo update
+cleanup ./target
+
+woot

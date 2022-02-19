@@ -1,0 +1,173 @@
+#!/bin/zsh
+# Purpose: DSL for project tooling
+# Usage: source this file, and start writing commands
+set -e
+
+#
+# Configuration
+#
+# - TOOL_NAME: name of the build tool
+# - PROJECT_NAME: name of the project
+
+
+#
+#
+# State
+#
+#
+
+declare -a _bt_cleanup_folders
+declare -A _bt_task_map
+_bt_build_command=""
+
+#
+#
+# Splitter
+#
+#
+_bt_split_on_with() {
+  local -a pre_with=()
+  local -a post_with=()
+  local with_passed=0
+  while [[ $# -gt 0 ]]; do
+    case $1 in
+      with)
+        with_passed=1
+        ;;
+      *)
+        if [[ "$with_passed" -eq 1 ]]; then 
+          post_with+=($1)
+        else
+          pre_with+=($1)
+        fi
+    esac
+    shift
+  done
+
+  echo "pre_with='$pre_with' post_with='$post_with'"
+}
+
+#
+#
+# State setters
+#
+#
+
+_bt_set_build_command() {
+  eval $(_bt_split_on_with $*)
+  _bt_build_command="$post_with"
+}
+
+_bt_create_task_command() {
+  eval $(_bt_split_on_with $*)
+  _bt_task_map[$pre_with]=$post_with
+}
+
+_bt_declare_cleanup_folders() {
+  _bt_cleanup_folders=$@
+}
+
+#
+#
+# Runners
+#
+#
+
+_bt_invoke_task() {
+  sh -c "${_bt_task_map[$*]}"
+}
+
+_bt_invoke_cleanup() {
+  for folder in $_bt_cleanup_folders; do
+    rm -rf $folder;
+  done
+}
+
+#
+#
+# CLI
+#
+#
+
+_bt_usage() {
+  local toolName=${TOOL_NAME:-buildtool}
+  local projectName=${PROJECT_NAME:-this project}
+  cat <<EOF
+$toolName - tooling for $projectName
+
+usage: 
+
+  $toolName [args]
+
+  where:
+
+            -v:   enable verbose mode for the build tool
+    -h, --help:   get this help text
+         build:   build $projectName
+           run:   start a script for $projectName
+         clean:   remove output folders
+
+available scripts: 
+EOF
+
+  for task in ${(k)_bt_task_map}; do
+    echo "$toolName $task"
+  done
+}
+
+_bt_fuzzy_ui() {
+  task_to_run=$(echo ${(j:.:)${(k)_bt_task_map}} | tr '.' '\n' | fzf)
+  echo "Running ./x $task_to_run"
+  _bt_invoke_task "$task_to_run"
+}
+
+_bt_fallback() {
+  if [[ -n "${_bt_task_map[$*]}" ]]; then 
+    _bt_invoke_task "$*"
+  else
+    _bt_fuzzy_ui "$*"
+  fi
+}
+
+
+_bt_parse_cli_and_invoke() {
+  local didSomething=0
+  while [[ $# -gt 0 ]]; do
+    case $1 in
+      -v)
+        set +x
+        ;;
+      -h|--help)
+        _bt_usage
+        didSomething=1
+        ;;
+      build)
+        _bt_invoke_build_command
+        didSomething=1
+        ;;
+      run)
+        shift
+        _bt_invoke_task "$*"
+        didSomething=1
+        ;;
+      clean|cleanup)
+        _bt_invoke_cleanup
+        didSomething=1
+        ;;
+      *)
+        _bt_fallback "$*"
+        didSomething=1
+        ;;
+    esac
+    shift
+  done
+
+  if [[ "$didSomething" -ne 1 ]]; then 
+    _bt_fallback "$*"
+  fi
+}
+
+alias build="_bt_set_build_command"
+alias run="_bt_create_task_command"
+alias cleanup="_bt_declare_cleanup_folders"
+alias woot='_bt_parse_cli_and_invoke $*'
