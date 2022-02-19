@@ -1,3 +1,0 @@
-compiler: gcc
-target_oses:
-  - raspbian-05-2020
