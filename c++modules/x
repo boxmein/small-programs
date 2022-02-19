@@ -1,0 +1,14 @@
+#!/bin/zsh
+set -e
+TOOL_NAME=./x
+PROJECT_NAME=c++modules
+. ../ideal-build-tool/buildtool
+
+tool clang++ 10.0.0
+
+build with make
+start with ./main
+
+cleanup module1.pcm module1.o module1_impl.o main
+
+woot
