@@ -60,12 +60,10 @@
 
 // Apply 40 steps of pair insertion to the polymer template and find the most and least common elements in the result. What do you get if you take the quantity of the most common element and subtract the quantity of the least common element?
 
-
-use std::str::FromStr;
-use std::io::{stdin, BufRead};
-use std::fmt;
 use std::collections::HashMap;
-
+use std::fmt;
+use std::io::{stdin, BufRead};
+use std::str::FromStr;
 
 #[derive(Debug)]
 struct Polymer {
@@ -165,8 +163,7 @@ impl FromStr for Rule {
     type Err = RuleParseError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let parts: Vec<&str> = s.split(' ')
-                                 .collect();
+        let parts: Vec<&str> = s.split(' ').collect();
 
         assert_eq!(parts[1], "->");
 
@@ -176,7 +173,6 @@ impl FromStr for Rule {
         })
     }
 }
-
 
 fn apply_rules(polymer: Polymer, rules: &[Rule]) -> Polymer {
     let mut cursor = 0;
@@ -188,9 +184,7 @@ fn apply_rules(polymer: Polymer, rules: &[Rule]) -> Polymer {
             break;
         }
 
-        let pair: String = vec![chars[cursor], chars[cursor + 1]]
-            .into_iter()
-            .collect();
+        let pair: String = vec![chars[cursor], chars[cursor + 1]].into_iter().collect();
 
         for rule in rules {
             if !rule.applies_to_pair(&pair) {
@@ -221,11 +215,8 @@ fn main() {
 
     let polymer = Polymer::new(&lines.next().unwrap());
 
-    let rules: Vec<Rule> = lines
-        .map(|line| line.parse::<Rule>().unwrap())
-        .collect();
+    let rules: Vec<Rule> = lines.map(|line| line.parse::<Rule>().unwrap()).collect();
 
-        
     println!("{}", polymer);
 
     let mut new_polymer = polymer;
@@ -240,7 +231,12 @@ fn main() {
     println!("most common: {} (count: {})", max_letter, max_count);
     println!("least common: {} (count: {})", min_letter, min_count);
 
-    println!("subtract: {} - {} = {}", max_count, min_count, max_count - min_count);
+    println!(
+        "subtract: {} - {} = {}",
+        max_count,
+        min_count,
+        max_count - min_count
+    );
 }
 
 #[cfg(test)]
@@ -249,7 +245,7 @@ mod tests {
     #[test]
     fn rule_parses() {
         assert_eq!(
-            "CH -> B".parse::<Rule>().unwrap(), 
+            "CH -> B".parse::<Rule>().unwrap(),
             Rule {
                 before: "CH".to_string(),
                 insert: 'B',
@@ -261,23 +257,12 @@ mod tests {
     fn example_correct() {
         let polymer = "NNCB".parse::<Polymer>().unwrap();
         let rules: Vec<Rule> = vec![
-            "CH -> B",
-            "HH -> N",
-            "CB -> H",
-            "NH -> C",
-            "HB -> C",
-            "HC -> B",
-            "HN -> C",
-            "NN -> C",
-            "BH -> H",
-            "NC -> B",
-            "NB -> B",
-            "BN -> B",
-            "BB -> N",
-            "BC -> B",
-            "CC -> N",
-            "CN -> C",
-        ].into_iter().map(|r| r.parse::<Rule>().unwrap()).collect();
+            "CH -> B", "HH -> N", "CB -> H", "NH -> C", "HB -> C", "HC -> B", "HN -> C", "NN -> C",
+            "BH -> H", "NC -> B", "NB -> B", "BN -> B", "BB -> N", "BC -> B", "CC -> N", "CN -> C",
+        ]
+        .into_iter()
+        .map(|r| r.parse::<Rule>().unwrap())
+        .collect();
 
         let mut new = polymer;
         for i in 0..10 {
@@ -289,7 +274,10 @@ mod tests {
             } else if i == 2 {
                 assert_eq!(new.data, "NBBBCNCCNBBNBNBBCHBHHBCHB");
             } else if i == 3 {
-                assert_eq!(new.data, "NBBNBNBBCCNBCNCCNBBNBBNBBBNBBNBBCBHCBHHNHCBBCBHCB");
+                assert_eq!(
+                    new.data,
+                    "NBBNBNBBCCNBCNCCNBBNBBNBBBNBBNBBCBHCBHHNHCBBCBHCB"
+                );
             } else if i == 4 {
                 assert_eq!(new.data.len(), 97);
             } else if i == 9 {

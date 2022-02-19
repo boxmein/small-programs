@@ -159,17 +159,14 @@
 
 // Using the full map, what is the lowest total risk of any path from the top left to the bottom right?
 
-
+use ndarray::prelude::*;
+use petgraph::algo::astar;
+use petgraph::graph::{DiGraph, NodeIndex};
 use std::io::{stdin, BufRead};
 use std::str::FromStr;
-use petgraph::graph::{NodeIndex, DiGraph};
-use petgraph::algo::astar;
-use ndarray::prelude::*;
 
 type EdgeData = u64;
 type NodeData = u64;
-
-
 
 #[derive(Default, Debug)]
 struct Floor {
@@ -182,28 +179,29 @@ fn digit_grid_to_ndarray(s: &str) -> Array2<u64> {
     let arr = s
         .split("\n")
         .filter(|x| x.len() > 0)
-        .map(|x| x.chars().map(|col| {
-            col
-                    .to_digit(10)
-                    .unwrap()
-                    .try_into()
-                    .unwrap()
-        }).collect::<Vec<NodeData>>())
+        .map(|x| {
+            x.chars()
+                .map(|col| col.to_digit(10).unwrap().try_into().unwrap())
+                .collect::<Vec<NodeData>>()
+        })
         .collect::<Vec<Vec<NodeData>>>();
 
-    let height =  arr.len();
+    let height = arr.len();
     let width = arr[0].len();
 
     let arr = arr.into_iter().flatten().collect::<Vec<NodeData>>();
 
-    Array2::from_shape_vec((
-        height,
-        width,
-    ), arr).expect("failed to create array")
+    Array2::from_shape_vec((height, width), arr).expect("failed to create array")
 }
 
 fn copy_into(av: &mut ArrayViewMut2<u64>, data: &Array2<u64>) {
-    assert_eq!(av.shape(), data.shape(), "copy_into: array view shape {:?} does not equal data shape {:?}", av.shape(), data.shape());
+    assert_eq!(
+        av.shape(),
+        data.shape(),
+        "copy_into: array view shape {:?} does not equal data shape {:?}",
+        av.shape(),
+        data.shape()
+    );
 
     for y in 0..av.shape()[0] {
         for x in 0..av.shape()[1] {
@@ -213,32 +211,31 @@ fn copy_into(av: &mut ArrayViewMut2<u64>, data: &Array2<u64>) {
 }
 
 fn repeat_ndarray(n: &Array2<u64>) -> Array2<u64> {
-    
     let new_shape = n.shape().iter().map(|i| i * 5).collect::<Vec<usize>>();
-    
+
     let height = n.shape()[0];
     let width = n.shape()[1];
 
     let mut shp: [usize; 2] = Default::default();
     shp.copy_from_slice(&new_shape);
 
-    let mut arr = Array2::from_shape_fn(shp, |_| { 0 });
+    let mut arr = Array2::from_shape_fn(shp, |_| 0);
 
     // Copies work like this:
     // A is the original dataset,
     // B is A where every item has 1 added to it,
     // C is B where every item has 1 added to it,
     // and so on.
-    // All items are in modulo 9 arithmetic + 1 (123456789123456789...) 
-    // A B C D E 
+    // All items are in modulo 9 arithmetic + 1 (123456789123456789...)
+    // A B C D E
     // B C D E F
-    // C D E F G 
+    // C D E F G
     // D E F G H
     // E F G H I
 
     for y in 0..5 {
         for x in 0..5 {
-            // find the slice's positions: 
+            // find the slice's positions:
             // +------+ 12345
             // | 1234 | 04291
             // +------+ 04219
@@ -256,73 +253,61 @@ fn repeat_ndarray(n: &Array2<u64>) -> Array2<u64> {
             let data_block = n + delta;
 
             // perform copy from data block to mega ndarray
-            copy_into(&mut arr.slice_mut(s![
-                top_y..bottom_y + 1,
-                left_x..right_x + 1
-            ]), &data_block);
-        } 
+            copy_into(
+                &mut arr.slice_mut(s![top_y..bottom_y + 1, left_x..right_x + 1]),
+                &data_block,
+            );
+        }
     }
 
     arr
 }
 
-fn digit_array_to_graph(inp: &Array2<u64>) -> (
+fn digit_array_to_graph(
+    inp: &Array2<u64>,
+) -> (
     DiGraph<NodeData, EdgeData>,
     NodeIndex, // start of traversal
-    NodeIndex // end of traversal
- ) {
+    NodeIndex, // end of traversal
+) {
     macro_rules! access_node {
         ($n:expr, $x:expr, $y:expr) => {
             $n.get($y).map(|row| row.get($x)).flatten()
-        }
+        };
     }
 
     let mut g: DiGraph<NodeData, EdgeData> = DiGraph::new();
 
-    let nodes: Vec<Vec<NodeIndex>> = 
-        inp.outer_iter().map(|row| {
-            row.outer_iter().map(|col| {
-                g.add_node(*col.into_scalar())
-            }).collect::<Vec<NodeIndex>>()
-        }).collect();
+    let nodes: Vec<Vec<NodeIndex>> = inp
+        .outer_iter()
+        .map(|row| {
+            row.outer_iter()
+                .map(|col| g.add_node(*col.into_scalar()))
+                .collect::<Vec<NodeIndex>>()
+        })
+        .collect();
 
     // Add edges to graph
     for (y, row) in nodes.iter().enumerate() {
         for (x, _) in row.iter().enumerate() {
             let center = nodes[y][x];
-            
+
             if x > 0 {
-                if let Some(left) = access_node!(nodes, x-1, y) {
-                    g.add_edge(
-                        center,
-                        *left,
-                        g[*left],
-                    );
+                if let Some(left) = access_node!(nodes, x - 1, y) {
+                    g.add_edge(center, *left, g[*left]);
                 }
             }
 
-            if let Some(right) = access_node!(nodes, x+1, y) {
-                g.add_edge(
-                    center,
-                    *right,
-                    g[*right],
-                );
+            if let Some(right) = access_node!(nodes, x + 1, y) {
+                g.add_edge(center, *right, g[*right]);
             }
             if y > 0 {
-                if let Some(up) = access_node!(nodes, x, y-1) {
-                    g.add_edge(
-                        center,
-                        *up,
-                        g[*up],
-                    );
+                if let Some(up) = access_node!(nodes, x, y - 1) {
+                    g.add_edge(center, *up, g[*up]);
                 }
             }
-            if let Some(down) = access_node!(nodes, x, y+1) {
-                g.add_edge(
-                    center,
-                    *down,
-                    g[*down],
-                );
+            if let Some(down) = access_node!(nodes, x, y + 1) {
+                g.add_edge(center, *down, g[*down]);
             }
         }
     }
@@ -332,8 +317,6 @@ fn digit_array_to_graph(inp: &Array2<u64>) -> (
 
     let start = *access_node!(nodes, 0, 0).unwrap();
     let end = *access_node!(nodes, max_x, max_y).unwrap();
-
-    
 
     (g, start, end)
 }
@@ -346,7 +329,7 @@ impl FromStr for Floor {
         let digits = digit_grid_to_ndarray(value);
 
         let expanded_digits = repeat_ndarray(&digits);
-        
+
         let (graph, start, end) = digit_array_to_graph(&expanded_digits);
 
         f.locations = graph;
@@ -366,7 +349,6 @@ fn correct_weight(weight: u64) -> u64 {
         weight
     }
 }
-
 
 fn main() {
     let mut s: String = String::default();
@@ -389,7 +371,7 @@ fn main() {
         floor.start,
         |n| n == floor.end,
         |e| correct_weight(*e.weight()),
-        |_| 0
+        |_| 0,
     ) {
         println!("lowest risk score: {}", k);
     }
@@ -439,13 +421,7 @@ mod tests {
 
         let arr = digit_grid_to_ndarray(s);
         let (g, start, end) = digit_array_to_graph(&arr);
-        if let Some((k, path)) = astar(
-            &g,
-            start,
-            |n| n == end,
-            |e| *e.weight(),
-            |_| 0
-        ) {
+        if let Some((k, path)) = astar(&g, start, |n| n == end, |e| *e.weight(), |_| 0) {
             assert_eq!(k, 40);
         } else {
             panic!("received None from a*");
@@ -472,11 +448,7 @@ mod tests {
 
     #[test]
     fn digit_array_to_graph_works() {
-        let arr = arr2(&[
-            [1u64, 2, 3],
-            [2, 3, 2],
-            [3, 2, 1]
-        ]);
+        let arr = arr2(&[[1u64, 2, 3], [2, 3, 2], [3, 2, 1]]);
 
         let (g, start, end) = digit_array_to_graph(&arr);
 
@@ -485,19 +457,12 @@ mod tests {
         g[start];
         g[end];
     }
-    
+
     #[test]
     fn repeat_ndarray_increases_size() {
-        let arr = arr2(&[
-                [1u64, 2, 3],
-                [2, 3, 2],
-                [3, 2, 1]
-        ]);
+        let arr = arr2(&[[1u64, 2, 3], [2, 3, 2], [3, 2, 1]]);
 
-        let shape = (
-            arr.shape()[0],
-            arr.shape()[1],
-        );
+        let shape = (arr.shape()[0], arr.shape()[1]);
 
         let arr = repeat_ndarray(&arr);
 
@@ -508,113 +473,73 @@ mod tests {
 
     #[test]
     fn repeat_ndarray_has_original_contents() {
-        let arr = arr2(&[
-                [1u64, 2, 3],
-                [2, 3, 2],
-                [3, 2, 1]
-        ]);
+        let arr = arr2(&[[1u64, 2, 3], [2, 3, 2], [3, 2, 1]]);
 
         let arr = repeat_ndarray(&arr);
 
-        assert_eq!(arr.slice(s![0..3, 0..3]), arr2(&[
-            [1, 2, 3],
-            [2, 3, 2],
-            [3, 2, 1]
-        ]));
+        assert_eq!(
+            arr.slice(s![0..3, 0..3]),
+            arr2(&[[1, 2, 3], [2, 3, 2], [3, 2, 1]])
+        );
     }
 
     #[test]
     fn repeat_ndarray_has_correct_repeat_at_1_0() {
-        let arr = arr2(&[
-                [1u64, 2, 3],
-                [2, 3, 2],
-                [3, 2, 1]
-        ]);
+        let arr = arr2(&[[1u64, 2, 3], [2, 3, 2], [3, 2, 1]]);
 
         let arr = repeat_ndarray(&arr);
 
-        assert_eq!(arr.slice(s![3..6, 0..3]), arr2(&[
-            [2, 3, 4],
-            [3, 4, 3],
-            [4, 3, 2]
-        ]));
+        assert_eq!(
+            arr.slice(s![3..6, 0..3]),
+            arr2(&[[2, 3, 4], [3, 4, 3], [4, 3, 2]])
+        );
     }
 
     #[test]
     fn repeat_ndarray_has_correct_repeat_at_2_0() {
-        let arr = arr2(&[
-                [1u64, 2, 3],
-                [2, 3, 2],
-                [3, 2, 1]
-        ]);
+        let arr = arr2(&[[1u64, 2, 3], [2, 3, 2], [3, 2, 1]]);
 
         let arr = repeat_ndarray(&arr);
 
-        assert_eq!(arr.slice(s![6..9, 0..3]), arr2(&[
-            [3, 4, 5],
-            [4, 5, 4],
-            [5, 4, 3]
-        ]));
+        assert_eq!(
+            arr.slice(s![6..9, 0..3]),
+            arr2(&[[3, 4, 5], [4, 5, 4], [5, 4, 3]])
+        );
     }
 
     #[test]
     fn repeat_ndarray_has_correct_repeat_at_4_0() {
-        let arr = arr2(&[
-                [1u64, 2, 3],
-                [2, 3, 2],
-                [3, 2, 1]
-        ]);
+        let arr = arr2(&[[1u64, 2, 3], [2, 3, 2], [3, 2, 1]]);
 
         let arr = repeat_ndarray(&arr);
 
-        assert_eq!(arr.slice(s![12..15, 0..3]), arr2(&[
-            [5, 6, 7],
-            [6, 7, 6],
-            [7, 6, 5]
-        ]));
+        assert_eq!(
+            arr.slice(s![12..15, 0..3]),
+            arr2(&[[5, 6, 7], [6, 7, 6], [7, 6, 5]])
+        );
     }
-
 
     #[test]
     fn repeat_ndarray_has_correct_repeat_at_4_4() {
-        let arr = arr2(&[
-                [1u64, 2, 3],
-                [2, 3, 2],
-                [3, 2, 1]
-        ]);
+        let arr = arr2(&[[1u64, 2, 3], [2, 3, 2], [3, 2, 1]]);
 
         let arr = repeat_ndarray(&arr);
 
-        assert_eq!(arr.slice(s![12..15, 12..15]), arr2(&[
-            [9, 10, 11],
-            [10, 11, 10],
-            [11, 10, 9]
-        ]));
+        assert_eq!(
+            arr.slice(s![12..15, 12..15]),
+            arr2(&[[9, 10, 11], [10, 11, 10], [11, 10, 9]])
+        );
     }
 
     #[test]
     fn copy_into_works() {
-        let mut ar1 = arr2(&[
-                [0, 0, 1],
-                [0, 0, 2],
-                [5, 4, 3]
-        ]);
+        let mut ar1 = arr2(&[[0, 0, 1], [0, 0, 2], [5, 4, 3]]);
 
-        let ar2 = arr2(&[
-            [6, 7],
-            [8, 9]
-        ]);
+        let ar2 = arr2(&[[6, 7], [8, 9]]);
 
-        copy_into(&mut ar1.slice_mut(s![
-            0..2,
-            0..2
-        ]), &ar2);
+        copy_into(&mut ar1.slice_mut(s![0..2, 0..2]), &ar2);
 
-        assert_eq!(ar1, arr2(&[
-            [6, 7, 1],
-            [8, 9, 2],
-            [5, 4, 3],
-        ]));
+        assert_eq!(ar1, arr2(&[[6, 7, 1], [8, 9, 2], [5, 4, 3],]));
     }
 
     #[test]

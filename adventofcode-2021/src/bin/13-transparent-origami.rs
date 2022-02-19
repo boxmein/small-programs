@@ -243,7 +243,6 @@ fn mirror_coordinate(coord: usize, mirroring_line: usize) -> usize {
     }
 }
 
-
 fn main() {
     // max X: 1310
     // get it: cat data/13-transparent-origami-input.txt| cut -d',' -f1 | sort -n |uniq |tail -n1
@@ -256,36 +255,36 @@ fn main() {
         .map(|value| value.expect("stdin failure"))
         .filter(|value| value != "")
     {
-      // print!("line: {} => ", value);
+        // print!("line: {} => ", value);
 
-      if value.starts_with("fold along ") {
-        let value = value.strip_prefix("fold along ").unwrap();
-        if value.starts_with("x=") {
-          let value = value.strip_prefix("x=").unwrap();
-          let value = value.parse::<u64>().expect("int parse error");
-          paper.fold(&FoldInstruction::FoldX(value));
-          // println!("fold: x={}. visible: {}", value, paper.count_visible());
+        if value.starts_with("fold along ") {
+            let value = value.strip_prefix("fold along ").unwrap();
+            if value.starts_with("x=") {
+                let value = value.strip_prefix("x=").unwrap();
+                let value = value.parse::<u64>().expect("int parse error");
+                paper.fold(&FoldInstruction::FoldX(value));
+                // println!("fold: x={}. visible: {}", value, paper.count_visible());
+            }
+            if value.starts_with("y=") {
+                let value = value.strip_prefix("y=").unwrap();
+                let value = value.parse::<u64>().expect("int parse error");
+                paper.fold(&FoldInstruction::FoldY(value));
+                // println!("fold: y={}. visible: {}", value, paper.count_visible());
+            }
+        } else {
+            if let [x, y] = value
+                .split(",")
+                .map(|i| i.parse::<usize>().expect("int parse error"))
+                .collect::<Vec<usize>>()[0..2]
+            {
+                // println!("fill: {}, {}", x, y);
+                paper.fill(x, y);
+            }
         }
-        if value.starts_with("y=") {
-          let value = value.strip_prefix("y=").unwrap();
-          let value = value.parse::<u64>().expect("int parse error");
-          paper.fold(&FoldInstruction::FoldY(value));
-          // println!("fold: y={}. visible: {}", value, paper.count_visible());
-        }
-      } else {
-        if let [x, y] = value
-          .split(",")
-          .map(|i| i.parse::<usize>().expect("int parse error"))
-          .collect::<Vec<usize>>()[0..2] {
-          // println!("fill: {}, {}", x, y);
-          paper.fill(x, y);
-        }
-      }
     }
 
     println!("{}", paper);
 }
-
 
 #[cfg(test)]
 mod tests {
