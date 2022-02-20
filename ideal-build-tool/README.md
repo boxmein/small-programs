@@ -150,17 +150,19 @@ These are current features of the shell script DSL:
 
 ## File structure
 
+Assuming that you make your build script into the file `./x`:
+
 Since the script you write with `./x` is a regular zsh script, you have to
 source the DSL commands into it.
 
 Here's an empty build file to start with:
 
-```
+```shell
 #!/bin/zsh
 set -e
-TOOL_NAME=./x
-PROJECT_NAME=
-. ../ideal-build-tool/buildtool
+TOOL_NAME=./x # change to the name of the script
+PROJECT_NAME= # change to project
+. ../ideal-build-tool/buildtool # change to match where you wget'ed
 
 # commands go here...
 
@@ -171,7 +173,12 @@ woot
 
 Commands from ideal-build-tool are implemented as zsh functions and aliases.
 
-### Invocation
+### `woot` - Invocation
+
+Simply starts the machinery of the tool. You should invoke `woot` at the end
+of the build script.
+
+Reference:
 
 Runs registered commands depending on the CLI arguments.
 
@@ -189,11 +196,13 @@ Runs registered commands depending on the CLI arguments.
 - When more than 1 arguments are passed:
   - Looks up the script registered with that name and runs it.
 
+Syntax:
+
 ```
 woot
 ```
 
-### Start script
+### `start` - Define start script
 
 Registers a command to run when `./x start` is run.
 
@@ -211,7 +220,7 @@ Example:
 start with python3 ./mycommand.py
 ```
 
-### Build script 
+### `build` - Define build script 
 
 Registers a command to run when `./x build` is run.
 
@@ -229,7 +238,7 @@ Example:
 build with ./gradlew :build 
 ```
 
-### Cleanup folders
+### `cleanup` - Define cleanup folders
 
 Registers folders to delete when `./x cleanup` is run.
 
@@ -245,7 +254,7 @@ Example:
 cleanup target/ ./dist/ ./__cache__/
 ```
 
-### Custom scripts 
+### `run` - define custom scripts 
 
 Registeres a custom script.
 
@@ -275,7 +284,7 @@ run tests with cargo test
 run dependency updates with yarn upgrade-interactive
 ```
 
-### Tool version checks
+### `tool` - Check for tools
 
 Checks that `<commandname>` is available in the `PATH`. If not, shows an error
 message and exits the script.
@@ -297,7 +306,7 @@ Example:
 tool yarn 1.22
 ```
 
-### Generic checks
+### `check` - Generic checks
 
 Runs a command to validate that something is OK before continuing with the 
 tooling script.
