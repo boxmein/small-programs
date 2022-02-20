@@ -6,6 +6,13 @@ Helps you write shell scripts that help users run common tasks in your project,
 without figuring out the tools, build systems, scripts, run commands etc
 involved.
 
+Skip to:
+
+- [Install](#install)
+- [Examples](#examples)
+- [Documentation](#documentation)
+- [Project governance](#governance)
+
 ## As a project user
 
 You don't need to install anything, simply invoking ./x --help will show you
@@ -19,6 +26,8 @@ you have built up. Your stack remains, and there's no real DSL.
 Since it's all a shell script, you can generate scripts in a loop.
 
 ### Installation
+
+<a name="install" id="install"></a>
 
 Download the buildtool script from this repo into your own repo:
 
@@ -46,38 +55,6 @@ chmod +x ./tool
 git add ./tool
 git commit -m "frontend for tooling"
 ```
-
-## Features
-
-These are current features of the shell script DSL:
-
-- It's all zsh
-- `build with <command>` for invoking build
-- `start with <command>` for starting developer mode
-- `cleanup ./build` for removing folders as a cleanup task
-- `run <task name> with <command>` for adding project-specific scripts
-- `tool <command_name> <version_range>` for making sure tools exist
-- `check <command_name>` for free-form checks
-
-## Roadmap
-
-- Specializations
-  - Specialized sourceable Zsh scripts that help with certain project
-    environments
-  - Yarn, NPM, Node, Lerna, Yarn Workspaces, etc
-  - Gradle
-  - Bazel
-  - Pip, Poetry, Pipenv
-  - Docker
-
-
-## Non-goals
-
-- **Dependency graphs, caching, etc** -- many other tools do it better. Invoke
-  those tools with this.
-- **Downloading tools** -- Package managers etc vary a lot. You might have
-  vendoring or multiple SDKs installed. You can use `tool TOOLNAME VERSION` to
-  check for existence.
 
 ## Examples
 
@@ -154,6 +131,22 @@ cleanup build .gradle
 woot
 ```
 </details>
+
+# Documentation
+
+<a name="documentation" id="documentation"></a>
+
+## Features
+
+These are current features of the shell script DSL:
+
+- It's all zsh
+- `build with <command>` for invoking build
+- `start with <command>` for starting developer mode
+- `cleanup ./build` for removing folders as a cleanup task
+- `run <task name> with <command>` for adding project-specific scripts
+- `tool <command_name> <version_range>` for making sure tools exist
+- `check <command_name>` for free-form checks
 
 ## File structure
 
@@ -328,3 +321,39 @@ Example:
 # Check that docker is up.
 check with docker ps 
 ```
+
+# Project governance
+
+<a name="governance" id="governance"></a>
+
+## Governance
+
+Currently: benevolent dictator for life
+
+## Contributing
+
+Standard GitHub flow: fork, pull-request, validate, merge
+
+## Licensing
+
+MIT license
+
+## Roadmap
+
+- Specializations
+  - Specialized sourceable Zsh scripts that help with certain project
+    environments
+  - Yarn, NPM, Node, Lerna, Yarn Workspaces, etc
+  - Gradle
+  - Bazel
+  - Pip, Poetry, Pipenv
+  - Docker
+
+
+## Non-goals
+
+- **Dependency graphs, caching, etc** -- many other tools do it better. Invoke
+  those tools with this.
+- **Downloading tools** -- Package managers etc vary a lot. You might have
+  vendoring or multiple SDKs installed. You can use `tool TOOLNAME VERSION` to
+  check for existence.
