@@ -1,0 +1,17 @@
+#!/bin/zsh
+set -e
+TOOL_NAME=./x
+PROJECT_NAME=permuter
+. ../ideal-build-tool/buildtool
+
+tool cargo
+
+build with cargo build
+
+run permute-capitalization with ./target/debug/permute-capitalization
+run permute-reverse with ./target/debug/permute-reverse
+run permute-exclamation-mark with ./target/debug/permute-exclamation-mark
+
+cleanup target
+
+woot
