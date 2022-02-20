@@ -1,0 +1,18 @@
+#!/bin/zsh
+set -e
+TOOL_NAME=./x
+PROJECT_NAME=use_context
+. ../ideal-build-tool/buildtool
+
+tool cargo
+
+build with cargo build
+
+run formatter with cargo fmt 
+run linter with cargo clippy 
+run check with cargo check
+run tests with cargo test
+
+cleanup target
+
+woot
