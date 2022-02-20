@@ -1,0 +1,12 @@
+#!/bin/zsh
+set -e
+TOOL_NAME=./x
+PROJECT_NAME=typefoo
+. ../ideal-build-tool/buildtool
+
+build with make
+start with ./typefoo
+
+cleanup ./typefoo
+
+woot
