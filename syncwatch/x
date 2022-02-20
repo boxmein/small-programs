@@ -1,0 +1,19 @@
+#!/bin/zsh
+set -e
+TOOL_NAME=./x
+PROJECT_NAME=syncwatch
+. ../ideal-build-tool/buildtool
+
+tool cargo
+
+build with cargo build
+start with cargo run 
+
+run tests with cargo test 
+run linter with cargo clippy 
+run formatter with cargo fmt 
+run package upgrade with cargo upgrade
+
+cleanup target
+
+woot
