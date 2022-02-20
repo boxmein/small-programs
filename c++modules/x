@@ -2,7 +2,7 @@
 set -e
 TOOL_NAME=./x
 PROJECT_NAME=c++modules
-. ../ideal-build-tool/buildtool
+. ../woot.inc
 
 tool clang++ 10.0.0
 

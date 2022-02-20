@@ -2,7 +2,7 @@
 set -e
 TOOL_NAME=./x
 PROJECT_NAME=process-runner-kt
-. ../ideal-build-tool/buildtool
+. ../woot.inc
 
 build with ./gradlew :assemble
 start with ./gradlew :runDebugExecutableNative 

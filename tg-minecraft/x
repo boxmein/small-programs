@@ -2,7 +2,7 @@
 set -e
 TOOL_NAME=./x
 PROJECT_NAME=tg-minecraft
-. ../ideal-build-tool/buildtool
+. ../woot.inc
 
 build with ./gradlew :build
 start with ./gradlew :run 

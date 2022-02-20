@@ -2,7 +2,7 @@
 set -e
 TOOL_NAME=./x
 PROJECT_NAME=small-programs
-. ../ideal-build-tool/buildtool
+. ../woot.inc
 
 build with cargo build
 

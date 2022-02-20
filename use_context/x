@@ -2,7 +2,7 @@
 set -e
 TOOL_NAME=./x
 PROJECT_NAME=use_context
-. ../ideal-build-tool/buildtool
+. ../woot.inc
 
 tool cargo
 

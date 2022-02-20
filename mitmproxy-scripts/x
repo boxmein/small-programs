@@ -2,7 +2,7 @@
 set -e
 TOOL_NAME=./x
 PROJECT_NAME=mitmproxy-scripts
-. ../ideal-build-tool/buildtool
+. ../woot.inc
 
 check pip3 show mitmproxy
 tool python3 3

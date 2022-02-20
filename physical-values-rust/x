@@ -2,7 +2,7 @@
 set -e
 TOOL_NAME=./x
 PROJECT_NAME=physical-values-rust
-. ../ideal-build-tool/buildtool
+. ../woot.inc
 
 tool cargo
 
