@@ -1,0 +1,21 @@
+#!/bin/zsh
+set -e
+TOOL_NAME=./x
+PROJECT_NAME=tg-minecraft
+. ../ideal-build-tool/buildtool
+
+build with ./gradlew :build
+start with ./gradlew :run 
+
+run gradle task list with ./gradlew :tasks 
+run tests with ./gradlew :check
+run create jar with ./gradlew :jar 
+run create distribution zip with ./gradlew :distZip
+run install with ./gradlew :installDist
+run docker build with ./gradlew :docker
+run upload docker image with ./gradlew :dockerPush
+run javadoc with ./gradlew :javadoc
+
+cleanup build .gradle
+
+woot
