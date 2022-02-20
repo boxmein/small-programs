@@ -1,0 +1,15 @@
+#!/bin/zsh
+set -e
+TOOL_NAME=./x
+PROJECT_NAME=redismanager
+. ../ideal-build-tool/buildtool
+
+tool python3 3
+tool poetry 1.1
+
+run install with poetry install
+start with poetry run ./redismanager-app.py
+
+cleanup ./venv
+
+woot
