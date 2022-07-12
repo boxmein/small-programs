@@ -45,6 +45,13 @@ struct maps* getmaps(pid_t pid) {
 
   if (kill(pid, 0) == -1) {
     perror("process ID invalid");
+    if (data != NULL) {
+      free(data);
+    }
+    if (maplist != NULL) {
+      free(maplist);
+    }
+    return NULL;
   }
 
   sprintf(mapsfile, "/proc/%d/maps", pid);
@@ -72,15 +79,17 @@ struct maps* getmaps(pid_t pid) {
     return NULL;
   }
 
+  assert(mapsfd != NULL);
+
   char line[512];
   while (fgets(line, 512, mapsfd) != NULL) {
     if (idx > 9) {
       break;
     }
 
-    if (!strstr(line, "[stack]")) {
-      //  && !strstr(line, "[heap]")
-      // printf("line did not contain stack or heap: %s", line);
+    assert(strlen(line) > 0);
+
+    if (!strstr(line, "[stack]") && !strstr(line, "[heap]")) {
       continue;
     }
 
@@ -95,9 +104,9 @@ struct maps* getmaps(pid_t pid) {
 
   fclose(mapsfd);
   
+  assert(data != NULL);
   data->mapping = maplist;
   data->mappingc = idx;
-
 
   return data;
 }
@@ -115,69 +124,94 @@ const char * whereis(const char *haystack, const size_t haystack_size, const cha
   return NULL;
 }
 
-const char* scanregion(FILE *fd, size_t start, size_t end, const char* scan) {
-  char buf2[BUF_SIZE];
+const char* scanregion(int proc_mem_fd, size_t start, size_t end, const char* scan) {
   const char* found = NULL;
   int rc = 1;
-  size_t current = start;
-  while (current < end) {
-    int to_read = MIN(BUF_SIZE, (int) end - (int) current);
-    fseek(fd, current, 0); 
-    rc = fread(buf2, 1, to_read, fd);
-    if (rc != to_read) {
-      perror("scanner read memory");
-      break;
-    }
-    found = whereis(buf2, to_read, scan);
-    if (found != NULL) {
-      printf("\nWOW found it at %p\n", found); 
-      break;
-    } 
-    current = current + to_read;
+
+  int size = end - start;
+  char *buf = malloc(size);
+
+  if (buf == NULL) {
+    perror("malloc scanregion failed");
+    return NULL;
   }
+
+  memset(buf, 0, size);
+
+  assert(proc_mem_fd != NULL);
+  assert(start > 0);
+  assert(start < end);
+  assert(size > 0);
+
+  if (!lseek(proc_mem_fd, start, 0)) {
+    perror("failed to lseek()");
+    free(buf);
+    return NULL;
+  } 
+
+  rc = read(proc_mem_fd, buf, size);
+  if (rc != size) {
+    perror("scanner read memory");
+    free(buf);
+    return NULL;
+  }
+  found = whereis(buf, size, scan);
+  if (found != NULL) {
+    printf("\rWOW found it at %p\n", found); 
+    free(buf);
+    return NULL;
+  }
+
+  free(buf);
   return found;
 }
 
-FILE * getprocmem(pid_t pid) {
+int getprocmem(pid_t pid) {
   char buf[32];
-
-
   if (kill(pid, 0) == -1) {
     perror("process ID invalid");
   }
 
   sprintf(buf, "/proc/%d/mem", pid);
-  FILE *fd = fopen(buf, "rb");
+  int proc_mem_fd = open(buf, O_RDONLY);
 
-  if (fd == NULL) {
+  if (proc_mem_fd == NULL) {
     perror("error opening mem");
     return NULL;
   }
-  return fd;
+  return proc_mem_fd;
 }
 
-const char* scanner(pid_t pid, struct maps* maps, const char *scan) {
-  FILE * fd = getprocmem(pid);
+const char* scanner(int proc_mem_fd, struct maps* maps, const char *scan) {
   const char* found = NULL;
-
-  if (fd == NULL) {
-    return NULL;
-  }
-  
+  assert(proc_mem_fd != NULL);
+  assert(maps != NULL);
+  assert(scan != NULL);
   for (int i = 0; i < maps->mappingc; i++) {
+    assert(maps->mapping != NULL);
     size_t start = maps->mapping[i].start;
     size_t end = maps->mapping[i].end;
-    found = scanregion(fd, start, end, scan);
+    assert(start > 0);
+    assert(end > 0);
+    found = scanregion(proc_mem_fd, start, end, scan);
     if (found != NULL) {
       break;
     }
   }
-  fclose(fd);
   return found;
 }
 
-int horrible(pid_t pid, const char *scan) {
-  ptrace(PTRACE_ATTACH, pid, NULL, NULL);
+int horrible(const pid_t pid, const char *scan) {
+  if (ptrace(PTRACE_ATTACH, pid, NULL, NULL) == -1) {
+    fprintf(stderr, "pid %d attach failure: ");
+    perror("ptrace(PTRACE_ATTACH) failed");
+  }
+  
+  int proc_mem_fd = getprocmem(pid);
+
+  if (proc_mem_fd == NULL) {
+    return 1;
+  }
 
   struct maps* maps = getmaps(pid);
 
@@ -185,15 +219,36 @@ int horrible(pid_t pid, const char *scan) {
     printf("reading maps failure\n");
     return 1;
   }
+  assert(kill(pid, 0) != -1);
+  assert(maps != NULL);
+  assert(scan != NULL);
+  scanner(proc_mem_fd, maps, scan);
 
-  while(1) {  
+
+  int status = 0;
+  while(1) {
     if (it_is_time_to_go_bye_bye) {
-      return 0;
+      break;
     }
-    scanner(pid, maps, scan);
-    ptrace(PTRACE_SINGLESTEP, pid);
-    sleep(1);
+    if (ptrace(PTRACE_SINGLESTEP, pid) == -1) {
+      fprintf(stderr, "error stepping on %d:", pid);
+      perror("ptrace(PTRACE_SINGLESTEP) failed");
+      break;
+    }
+    wait(&status);
+    if (WIFEXITED(status)) {
+      fprintf(stderr, "pid %d WIFEXITED %d\n", pid, status);
+      break;
+    }
+    scanner(proc_mem_fd, maps, scan);
   }
+
+  if (ptrace(PTRACE_DETACH, pid, NULL, NULL) == -1) {
+    fprintf(stderr, "pid %d: ");
+    perror("ptrace(PTRACE_DETACH) failed");
+  }
+  assert(proc_mem_fd != NULL);
+  close(proc_mem_fd);
   free(maps);
 }
 
@@ -215,5 +270,4 @@ int main(int argc, char *argv[]) {
   assert(strlen(scan) < BUF_SIZE);
 
   horrible(pid, scan);
-  ptrace(PTRACE_DETACH, pid, NULL, NULL);
 }
