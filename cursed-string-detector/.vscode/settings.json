@@ -1,0 +1,8 @@
+{
+  "files.associations": {
+    "Tiltfile": "starlark",
+    "unistd.h": "c",
+    "cerrno": "c",
+    "random": "c"
+  }
+}
