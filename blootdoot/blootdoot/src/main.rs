@@ -10,8 +10,6 @@ use std::io::stdin;
 use tokio::task::spawn_blocking;
 use tokio::io::AsyncWriteExt;
 use tracing::debug;
-use tracing_subscriber::env;
-
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 enum Token {
