@@ -2,6 +2,11 @@
 
 Probably the smallest build tool that still involves a dep-graph
 
+Prior art is plentiful, and this is a particular thing I've also tried to fix
+earlier:
+
+- Zsh based https://github.com/boxmein/woot
+
 ## Syntax
 
 Currently YAML based (easy to serialize/deserialize)
