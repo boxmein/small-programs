@@ -17,7 +17,7 @@ The mental model is this:
 - Some output stuff goes out
 - Some actions are taken
 
-```
+```yaml
 # ./bakefile.yml
 tasks:
   - inputs:
