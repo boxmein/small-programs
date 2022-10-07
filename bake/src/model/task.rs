@@ -2,8 +2,10 @@ use crate::model::{Action, ActionResult, Input, Output};
 use crate::traits::{Context, Executable};
 use crate::util::get_max_mtime;
 use anyhow::Result;
+use serde::{Deserialize, Serialize};
+use tracing::debug;
 
-#[derive(Clone, Debug)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Task {
     pub inputs: Vec<Input>,
     pub actions: Vec<Action>,
@@ -33,7 +35,7 @@ impl Task {
         let output_is_older = input_age > output_age;
 
         if output_is_older {
-            println!("output is older: {:?}", output_is_older);
+            debug!("output is older: {:?}", output_is_older);
         }
 
         Ok(output_is_older)
@@ -56,7 +58,7 @@ impl Executable<TaskResult> for Task {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct TaskResult {
     pub task: Task,
     pub result: Vec<ActionResult>,

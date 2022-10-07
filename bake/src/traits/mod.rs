@@ -1,3 +1,4 @@
+use crate::model::{Config, RunResult};
 use anyhow::Result;
 use std::time::SystemTime;
 
@@ -16,4 +17,9 @@ pub trait Executable<T> {
 
 pub trait Logger {
     fn log(&self, msg: &str);
+}
+
+pub trait Run {
+    fn new(config: Config) -> Self;
+    fn run(&self, ctx: &impl Context) -> RunResult;
 }

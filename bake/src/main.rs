@@ -1,8 +1,11 @@
 use bake::*;
-use std::env::args;
+
+use tracing::debug;
 
 fn main() {
-    let filename = args().next().expect("usage: bake FILENAME");
-    let conf = load_file(&filename);
-    exec_graph(&conf);
+    tracing_subscriber::fmt::init();
+
+    let conf = read_bakefile().expect("failed to read bakefile");
+    debug!("parsed bakefile to Config = {:?}", conf);
+    run_config(conf);
 }

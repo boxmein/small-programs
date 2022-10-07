@@ -1,0 +1,7 @@
+tasks:
+  - inputs:
+      - !File ./Cargo.toml
+    outputs:
+      - !File ./Cargo.lock
+    actions:
+      - !Shell cargo check

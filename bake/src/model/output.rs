@@ -2,9 +2,10 @@ use crate::files::get_mtime;
 use crate::model::Input;
 use crate::traits::LastModifiedTimeable;
 use anyhow::Result;
+use serde::{Deserialize, Serialize};
 use std::time::SystemTime;
 
-#[derive(Clone, Debug)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum Output {
     File(String),
 }
