@@ -13,15 +13,15 @@ pub struct Task {
 }
 
 impl Task {
-    pub fn depends_on(&self, other: &Task) -> bool {
+    pub fn depends_on(&self, other: &Task) -> Result<bool> {
         for input in &self.inputs {
             for output in &other.outputs {
-                if input.is_provided_by(output) {
-                    return true;
+                if input.is_provided_by(output)? {
+                    return Ok(true);
                 }
             }
         }
-        return false;
+        return Ok(false);
     }
 
     fn should_execute(&self) -> Result<bool> {
@@ -49,8 +49,10 @@ impl Task {
 impl Executable<TaskResult> for Task {
     fn execute(&self, ctx: &impl Context) -> Result<TaskResult> {
         if !self.should_execute()? {
+            debug!("task {:?} was not executed", self);
             return Ok(TaskResult::new_nothing_to_be_done(self.clone()));
         }
+        debug!("task {:?} executing...", self);
         Ok(TaskResult::new_with_results(
             self.clone(),
             self.run_commands(ctx)?,

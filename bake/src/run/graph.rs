@@ -1,22 +1,20 @@
-use tracing::debug;
-
 use crate::model::{RunResult, TaskAndResult};
 use crate::traits::Run;
-
-use petgraph::graph::DiGraph;
-use std::collections::HashMap;
-
 use crate::{
     model::{Config, Task},
     traits::{Context, Executable},
 };
+use anyhow::Result;
+use petgraph::graph::DiGraph;
+use std::collections::HashMap;
+use tracing::debug;
 
 pub struct GraphRun {
     config: Config,
 }
 
 impl GraphRun {
-    fn get_graph(&self) -> DiGraph<&Task, ()> {
+    fn get_graph(&self) -> Result<DiGraph<&Task, ()>> {
         let mut graph = DiGraph::new();
 
         let mut task_to_node = HashMap::new();
@@ -28,7 +26,7 @@ impl GraphRun {
 
         for left in &self.config.tasks {
             for right in &self.config.tasks {
-                if right.depends_on(left) {
+                if right.depends_on(left)? {
                     let left_index = task_to_node[&(left as *const Task)];
                     let right_index = task_to_node[&(right as *const Task)];
                     // add edge: left ---> right
@@ -42,10 +40,10 @@ impl GraphRun {
             node_count = graph.node_count(),
             edge_count = graph.edge_count()
         );
-        graph
+        Ok(graph)
     }
 
-    fn execute_graph(&self, graph: DiGraph<&Task, ()>, ctx: &impl Context) -> RunResult {
+    fn execute_graph(&self, graph: DiGraph<&Task, ()>, ctx: &impl Context) -> Result<RunResult> {
         let mut visitor = petgraph::visit::Topo::new(&graph);
 
         let mut task_results = vec![];
@@ -62,7 +60,7 @@ impl GraphRun {
             });
         }
 
-        RunResult { task_results }
+        Ok(RunResult { task_results })
     }
 }
 
@@ -70,8 +68,8 @@ impl Run for GraphRun {
     fn new(config: Config) -> GraphRun {
         GraphRun { config }
     }
-    fn run(&self, ctx: &impl Context) -> RunResult {
-        let graph = self.get_graph();
+    fn run(&self, ctx: &impl Context) -> Result<RunResult> {
+        let graph = self.get_graph()?;
         self.execute_graph(graph, ctx)
     }
 }

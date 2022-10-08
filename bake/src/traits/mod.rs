@@ -21,5 +21,5 @@ pub trait Logger {
 
 pub trait Run {
     fn new(config: Config) -> Self;
-    fn run(&self, ctx: &impl Context) -> RunResult;
+    fn run(&self, ctx: &impl Context) -> Result<RunResult>;
 }
