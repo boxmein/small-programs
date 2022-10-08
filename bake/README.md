@@ -7,6 +7,10 @@ earlier:
 
 - Zsh based https://github.com/boxmein/woot
 
+## Usage
+
+* [Install it](#installing)
+
 ## Syntax
 
 Currently YAML based (easy to serialize/deserialize)
