@@ -9,7 +9,52 @@ earlier:
 
 ## Usage
 
-* [Install it](#installing)
+- [Install it](#installing)
+
+## Examples
+
+TypeScript set-up:
+
+```yaml
+tasks:
+  - inputs:
+      - !File package.json
+    outputs:
+      - !File yarn.lock
+      - !File .yarn/install-state.gz
+      - !Glob node_modules/**
+    actions:
+      - !Shell yarn install
+  - inputs:
+      - !Glob node_modules/**
+      - !Glob src/**/*.ts
+    outputs:
+      - !Glob dist/**/*.js
+    actions:
+      - !Shell yarn run tsc -p .
+```
+
+Go monorepo set-up:
+
+```yaml
+tasks:
+  - inputs:
+      - !Glob pkg/**/*.go
+      - !Glob service/X/**/*.go
+      - !File cmd/X/main.go
+    outputs:
+      - !File bin/X
+    actions:
+      - !Shell go build -o bin/X ./cmd/X
+  - inputs:
+      - !Glob pkg/**/*.go
+      - !Glob service/Y/**/*.go
+      - !File cmd/Y/main.go
+    outputs:
+      - !File bin/Y
+    actions:
+      - !Shell go build -o bin/Y ./cmd/Y
+```
 
 ## Syntax
 
@@ -33,20 +78,27 @@ tasks:
       - !Shell "cat x.yml y.yml > z.yml"
 ```
 
-Input types:
+### Inputs
 
-- `!File filename` -- declare that the output depends on this input file. If the
-  input file changes, the actions must be re-run to generate the output file.
+Inputs specify what can cause the output of the task to change. If any input
+changes, the task is run again next time.
 
-Action types:
+- `!File filename` -- when the file changes, re-run the actions
+- `!Glob pattern` -- when any file indicated by the glob changes, re-run the actions
 
-- `!Shell command` -- invoke `bash -c "command"`. Hopefully the action generates
-  the output files.
+### Actions
 
-Output types:
+Actions specify what to do to generate output from input
 
-- `!File filename` -- the actions generate this output file. Any tasks that
-  depend on the file, will be re-run as well.
+- `!Shell command` -- invoke `bash -c "command"`
+
+### Outputs
+
+Specifies what files the actions affect. This is used to correctly determine the
+dependency graph, and to skip task execution if outputs are newer than inputs
+
+- `!File filename` -- this task modifies this file
+- `!Glob pattern` -- this task modifies these files
 
 ## Installing
 
