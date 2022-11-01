@@ -1,7 +1,0 @@
-{
-    "yaml.customTags": [
-        "!File scalar",
-        "!Shell scalar",
-        "!Glob scalar"
-    ]
-}
