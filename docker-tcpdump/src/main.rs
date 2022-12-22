@@ -10,5 +10,7 @@ fn main() {
     println!("Hello, world!");
     println!("Args: {:?}", args);
 
+    print_network_adapters();
+
     log_all_packets(&args.filter, &args.output_path);
 }
