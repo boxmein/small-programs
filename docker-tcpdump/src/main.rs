@@ -1,7 +1,11 @@
-mod lib;
-use clap::Parser;
+mod cli;
+mod packets;
+mod network_adapters;
 
-use crate::lib::*;
+pub use cli::Cli;
+pub use network_adapters::print_network_adapters;
+pub use packets::log_all_packets;
+use clap::Parser;
 
 fn main() {
     tracing_subscriber::fmt::init();
