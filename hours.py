@@ -14,9 +14,14 @@ def parse_hh_mm(item: str) -> datetime:
 
 def parse_time_range(rng: str) -> (datetime, datetime): 
     left, right = rng.split("-")
+    left = parse_hh_mm(left)
+    if right.trim() == "":
+        right = datetime.now() 
+    else:
+        right = parse_hh_mm(right)
     return (
-        parse_hh_mm(left),
-        parse_hh_mm(right)
+        left,
+        right
     )
 
 def get_entered_time_ranges():
@@ -35,7 +40,6 @@ def td_to_string(td: timedelta) -> str:
     return f"{days}d{hours}h{minutes}min{seconds}s" 
 
 def sum_time(ranges): 
-    print(ranges)
     return sum(((right - left) for (left, right) in ranges), timedelta())
 
 time_ranges = [parse_time_range(rng) for rng in get_entered_time_ranges()]
