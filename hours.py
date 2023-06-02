@@ -15,7 +15,7 @@ def parse_hh_mm(item: str) -> datetime:
 def parse_time_range(rng: str) -> (datetime, datetime): 
     left, right = rng.split("-")
     left = parse_hh_mm(left)
-    if right.trim() == "":
+    if right.strip() == "":
         right = datetime.now() 
     else:
         right = parse_hh_mm(right)
