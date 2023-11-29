@@ -1,0 +1,63 @@
+cabal-version: 2.2
+
+name:           adventofcode-y2023
+version:        0.1.0.0
+description:    Please see the README on GitHub at <https://github.com/boxmein/small-programs/tree/master/adventofcode-y2023>
+homepage:       https://github.com/boxmein/small-programs/tree/master/adventofcode-y2023
+bug-reports:    https://github.com/boxmein/small-programs/tree/master/adventofcode-y2023
+author:         boxmein
+maintainer:     boxmein@boxmein.net
+copyright:      2023 boxmein
+license:        AGPL-3.0
+license-file:   LICENSE
+build-type:     Simple
+extra-source-files:
+    README.md
+    CHANGELOG.md
+
+source-repository head
+  type: git
+  location: https://github.com/boxmein/small-programs
+
+library
+  exposed-modules:
+      Lib
+  other-modules:
+      Paths_adventofcode_y2023
+  autogen-modules:
+      Paths_adventofcode_y2023
+  hs-source-dirs:
+      src
+  ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints
+  build-depends:
+      base >=4.7 && <5
+  default-language: Haskell2010
+
+executable adventofcode-y2023-exe
+  main-is: Main.hs
+  other-modules:
+      Paths_adventofcode_y2023
+  autogen-modules:
+      Paths_adventofcode_y2023
+  hs-source-dirs:
+      app
+  ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints -threaded -rtsopts -with-rtsopts=-N
+  build-depends:
+      adventofcode-y2023
+    , base >=4.7 && <5
+  default-language: Haskell2010
+
+test-suite adventofcode-y2023-test
+  type: exitcode-stdio-1.0
+  main-is: Spec.hs
+  other-modules:
+      Paths_adventofcode_y2023
+  autogen-modules:
+      Paths_adventofcode_y2023
+  hs-source-dirs:
+      test
+  ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints -threaded -rtsopts -with-rtsopts=-N
+  build-depends:
+      adventofcode-y2023
+    , base >=4.7 && <5
+  default-language: Haskell2010
