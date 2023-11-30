@@ -1,0 +1,13 @@
+cxx_binary(
+  name = "cursed-string-detector",
+  srcs = [
+    "cursed-string-detector.c"
+  ]
+)
+
+cxx_binary(
+  name = "testutil",
+  srcs = [
+    "testutil.c"
+  ]
+)
