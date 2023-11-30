@@ -1,0 +1,6 @@
+cxx_binary(
+  name = "ninkirpc",
+  srcs = [
+    "ninkiRPC.cpp"
+  ]
+)
