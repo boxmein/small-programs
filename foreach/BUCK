@@ -1,0 +1,9 @@
+cxx_binary(
+  name = "foreach",
+  srcs = [
+    "foreach.cpp"
+  ],
+  compiler_flags = [
+    "-std=c++17"
+  ]
+)
