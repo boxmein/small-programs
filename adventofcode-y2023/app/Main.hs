@@ -1,14 +1,13 @@
 module Main (main) where
 
-import DayOne (dayOnePartOne)
-import Lib (stringReplace)
+import DayOne (dayOnePartOne, dayOnePartTwo)
+import Lib (stringReplace, runOverLinesOfFile)
 
 main :: IO ()
-main = dayOnePartOneMain
-
+main = dayOnePartTwoMain
 
 dayOnePartOneMain :: IO () 
-dayOnePartOneMain = do 
-  putStrLn "DAY ONE"
-  fd <- readFile "./res/day1-input.txt"
-  (putStrLn . show . dayOnePartOne . lines) fd
+dayOnePartOneMain = runOverLinesOfFile "./res/day1-input.txt" dayOnePartOne
+
+dayOnePartTwoMain :: IO () 
+dayOnePartTwoMain = runOverLinesOfFile "./res/day1-input.txt" dayOnePartTwo

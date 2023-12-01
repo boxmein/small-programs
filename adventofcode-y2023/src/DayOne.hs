@@ -1,5 +1,6 @@
 module DayOne (
-  dayOnePartOne
+  dayOnePartOne,
+  dayOnePartTwo
 ) where 
 
 import Data.List (isPrefixOf, isSuffixOf, find)
@@ -7,17 +8,21 @@ import Data.Maybe (isJust, fromJust)
 
 
 dayOnePartOne :: [[Char]] -> Integer
-dayOnePartOne inputLines = 
-  let linesMaybes = map getFirstAndLastDigit inputLines
-      linesOnlyJusts = filter isJust linesMaybes 
-      unwrappedJusts = map fromJust linesOnlyJusts
-      parsedInts = map read unwrappedJusts
-      summed = sum parsedInts 
-    in summed
+dayOnePartOne = sum . map (read . fromJust) . filter isJust . map getFirstAndLastDigit
+
+dayOnePartTwo :: [[Char]] -> Integer
+dayOnePartTwo = sum . map (read . fromJust) . filter isJust . map getFirstAndLastDigitPartTwo
+
 
 getFirstAndLastDigit :: [Char] -> Maybe [Char]
 getFirstAndLastDigit s =
     case (firstDigit s, lastDigit s) of
+        (Just fd, Just ld) -> Just (fd : ld : [])
+        _ -> Nothing
+
+getFirstAndLastDigitPartTwo :: [Char] -> Maybe [Char]
+getFirstAndLastDigitPartTwo s =
+    case (firstDigitPartTwo s, lastDigitPartTwo s) of
         (Just fd, Just ld) -> Just (fd : ld : [])
         _ -> Nothing
 
@@ -47,14 +52,8 @@ endsWithDigitWord :: String -> Bool
 endsWithDigitWord = condDigitWord isSuffixOf
 
 parseCondDigitWord :: (String -> String -> Bool) -> String -> Maybe Char
-parseCondDigitWord cond s = 
-  let 
-      isCondWord (word,_) = word `cond` s
-      firstMatch = find isCondWord mapping
-      takeSecond (first,second) = second
-      secondItem = fmap takeSecond firstMatch 
-    in 
-      secondItem
+parseCondDigitWord cond s = (fmap snd . find isCondWord) mapping
+  where isCondWord = (flip cond) s . fst
 
 parseLeadingDigitWord :: String -> Maybe Char
 parseLeadingDigitWord = parseCondDigitWord isPrefixOf
@@ -63,14 +62,14 @@ parseTrailingDigitWord :: String -> Maybe Char
 parseTrailingDigitWord = parseCondDigitWord isSuffixOf
 
 
-firstDigitPart2 :: [Char] -> Maybe Char
-firstDigitPart2 s = 
+firstDigitPartTwo :: [Char] -> Maybe Char
+firstDigitPartTwo s = 
     if matchesDigit (head s) then Just (head s)
     else if startsWithDigitWord s then parseLeadingDigitWord s
     else firstDigit (tail s)
 
-lastDigitPart2 :: [Char] -> Maybe Char
-lastDigitPart2 s = 
+lastDigitPartTwo :: [Char] -> Maybe Char
+lastDigitPartTwo s = 
     if matchesDigit (head s) then Just (head s)
     else if endsWithDigitWord s then parseTrailingDigitWord s
     else lastDigit (tail s)
