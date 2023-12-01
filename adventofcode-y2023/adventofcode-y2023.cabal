@@ -25,6 +25,7 @@ source-repository head
 
 library
   exposed-modules:
+      DayOne
       Lib
   other-modules:
       Paths_adventofcode_y2023

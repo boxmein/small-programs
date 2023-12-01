@@ -1,6 +1,11 @@
 module Main (main) where
 
-import Lib
+import DayOne
 
 main :: IO ()
-main = someFunc
+main = do 
+  putStrLn "DAY ONE"
+  fd <- readFile "./res/day1-part1-input.txt"
+  (putStrLn . show . dayOnePartOne . lines) fd
+  
+
