@@ -1,23 +1,24 @@
 module DayOne (
-  dayOnePartOne,
-  firstDigit,
-  lastDigit
+  dayOnePartOne
 ) where 
-
-import Data.Char (isDigit)
 
 
 dayOnePartOne :: [[Char]] -> Integer
-dayOnePartOne = sum . map read . map getFirstAndLastDigit
-  
+dayOnePartOne = sum . map (read . getFirstAndLastDigit)
+
 getFirstAndLastDigit :: [Char] -> [Char]
 getFirstAndLastDigit s = firstDigit s : lastDigit s : []
 
-digits :: [Char] -> [Char]
-digits = filter isDigit
+matchesDigit :: Char -> Bool
+matchesDigit x = x `elem` ['0'..'9']
 
 firstDigit :: [Char] -> Char
-firstDigit = head . digits
+firstDigit (x:xs) = if matchesDigit x then x else firstDigit xs
 
 lastDigit :: [Char] -> Char
-lastDigit = last . digits
+lastDigit s = 
+  let 
+      x = last s  
+      xs = init s
+  in
+    if matchesDigit x then x else lastDigit xs
