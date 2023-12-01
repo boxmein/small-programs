@@ -42,7 +42,7 @@ mapping = [("one", '1'),
   ("nine", '9'),
   ("zero", '0')]
 
-digitWords = map (\(a,b) -> a) mapping
+digitWords = map fst mapping
 
 condDigitWord :: (String -> String -> Bool) -> String -> Bool
 condDigitWord cond s = any (\x -> x `cond` s) digitWords
@@ -80,9 +80,4 @@ firstDigit :: [Char] -> Maybe Char
 firstDigit (x:xs) = if matchesDigit x then Just x else firstDigit xs
 
 lastDigit :: [Char] -> Maybe Char
-lastDigit s = 
-  let 
-      x = last s  
-      xs = init s
-  in
-    if matchesDigit x then Just x else lastDigit xs
+lastDigit s = if matchesDigit (last s) then Just (last s) else lastDigit (init s)

@@ -36,8 +36,8 @@ library
       base >=4.7 && <5
   default-language: Haskell2010
 
-executable adventofcode-y2023-exe
-  main-is: Main.hs
+executable dayone-exe
+  main-is: DayOneMain.hs
   other-modules:
       Paths_adventofcode_y2023
   hs-source-dirs:

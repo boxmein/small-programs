@@ -37,8 +37,8 @@ library:
   source-dirs: src
 
 executables:
-  adventofcode-y2023-exe:
-    main:                Main.hs
+  dayone-exe:
+    main:                DayOneMain.hs
     source-dirs:         app
     ghc-options:
     - -threaded
