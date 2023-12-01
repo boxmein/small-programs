@@ -1,6 +1,8 @@
 module DayOne (
-  dayOnePartOne,
-  dayOnePartTwo
+  dayOnePartOne, dayOnePartTwo, 
+  getFirstAndLastDigitPartTwo, 
+  firstDigitPartTwo, 
+  lastDigitPartTwo
 ) where 
 
 import Data.List (isPrefixOf, isSuffixOf, find)
@@ -66,13 +68,13 @@ firstDigitPartTwo :: [Char] -> Maybe Char
 firstDigitPartTwo s = 
     if matchesDigit (head s) then Just (head s)
     else if startsWithDigitWord s then parseLeadingDigitWord s
-    else firstDigit (tail s)
+    else firstDigitPartTwo (tail s)
 
 lastDigitPartTwo :: [Char] -> Maybe Char
 lastDigitPartTwo s = 
-    if matchesDigit (head s) then Just (head s)
+    if matchesDigit (last s) then Just (last s)
     else if endsWithDigitWord s then parseTrailingDigitWord s
-    else lastDigit (tail s)
+    else lastDigitPartTwo (init s)
 
 firstDigit :: [Char] -> Maybe Char
 firstDigit (x:xs) = if matchesDigit x then Just x else firstDigit xs
